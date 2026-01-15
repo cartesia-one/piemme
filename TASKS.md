@@ -84,7 +84,7 @@
 ### 3.3 Component Architecture
 - [x] Create `TitleBar` component
 - [x] Create `PromptList` component
-- [ ] Create `Editor` component (wrapper around tui-textarea)
+- [x] Create `Editor` component (wrapper around tui-textarea)
 - [x] Create `StatusBar` component
 - [x] Create `HelpOverlay` component
 - [x] Create `Popup` component (for selectors)
@@ -111,7 +111,7 @@
 - [x] Display selected prompt content
 - [x] Show prompt name as header
 - [x] Implement read-only view for Normal mode
-- [ ] Handle long content with scrolling
+- [x] Handle long content with scrolling
 
 ### 4.4 Status Bar
 - [x] Display current mode
@@ -149,16 +149,16 @@
 - [x] Visual mode indicator update
 
 ### 6.2 Text Editor Integration
-- [ ] Configure tui-textarea
-- [ ] Implement basic text input
-- [ ] Implement cursor movement
-- [ ] Implement `Ctrl+←`/`Ctrl+→` word movement
-- [ ] Implement `Home`/`End` line navigation
-- [ ] Implement `Ctrl+Home`/`Ctrl+End` document navigation
+- [x] Configure tui-textarea
+- [x] Implement basic text input
+- [x] Implement cursor movement
+- [x] Implement `Ctrl+←`/`Ctrl+→` word movement
+- [x] Implement `Home`/`End` line navigation
+- [x] Implement `Ctrl+Home`/`Ctrl+End` document navigation
 
 ### 6.3 Edit Operations
-- [ ] Implement undo (`Ctrl+z`)
-- [ ] Implement redo (`Ctrl+y`)
+- [x] Implement undo (`Ctrl+z`)
+- [x] Implement redo (`Ctrl+y`)
 - [ ] Implement text selection
 - [ ] Implement copy/cut/paste within editor
 

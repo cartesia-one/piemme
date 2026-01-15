@@ -3,6 +3,7 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyEventKind};
 use std::time::Duration;
+use tui_textarea::TextArea;
 
 use crate::config::{archive_dir, config_path, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
@@ -11,7 +12,7 @@ use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
 /// The main application
-pub struct App {
+pub struct App<'a> {
     /// Terminal instance
     terminal: Tui,
     /// Application state
@@ -22,9 +23,11 @@ pub struct App {
     index: Index,
     /// Archived prompts count
     archived_count: usize,
+    /// Text editor (created lazily when entering insert mode)
+    editor: Option<TextArea<'a>>,
 }
 
-impl App {
+impl<'a> App<'a> {
     /// Create a new application instance
     pub fn new() -> Result<Self> {
         // Initialize terminal
@@ -66,6 +69,7 @@ impl App {
             config,
             index,
             archived_count,
+            editor: None,
         })
     }
 
@@ -74,7 +78,13 @@ impl App {
         loop {
             // Draw UI
             self.terminal.draw(|frame| {
-                render(frame, &self.state, &self.config, self.archived_count);
+                render(
+                    frame,
+                    &self.state,
+                    &self.config,
+                    self.archived_count,
+                    self.editor.as_ref(),
+                );
             })?;
 
             // Handle events
@@ -82,8 +92,37 @@ impl App {
                 if let Event::Key(key) = event::read()? {
                     // Only handle key press events (not release)
                     if key.kind == KeyEventKind::Press {
-                        let action = handle_key_event(key, &self.state);
-                        self.handle_action(action)?;
+                        // In Insert mode, let the editor handle most keys
+                        if self.state.mode == Mode::Insert {
+                            if let Some(ref mut editor) = self.editor {
+                                // Check for special keys that exit insert mode or perform actions
+                                let action = handle_key_event(key, &self.state);
+                                match action {
+                                    Action::ExitMode | Action::Save => {
+                                        self.handle_action(action)?;
+                                    }
+                                    Action::Undo => {
+                                        editor.undo();
+                                    }
+                                    Action::Redo => {
+                                        editor.redo();
+                                    }
+                                    Action::OpenHelp => {
+                                        self.handle_action(action)?;
+                                    }
+                                    Action::Quit => {
+                                        self.handle_action(action)?;
+                                    }
+                                    _ => {
+                                        // Let textarea handle the input
+                                        editor.input(key);
+                                    }
+                                }
+                            }
+                        } else {
+                            let action = handle_key_event(key, &self.state);
+                            self.handle_action(action)?;
+                        }
                     }
                 }
             }
@@ -133,16 +172,14 @@ impl App {
             // Mode switching
             Action::EnterInsertMode => {
                 if self.state.has_prompts() {
-                    self.state.mode = Mode::Insert;
-                    self.state.editor_focused = true;
+                    self.enter_insert_mode();
                 }
             }
             Action::ExitMode => {
                 match self.state.mode {
                     Mode::Insert => {
                         // Save on exit from insert mode
-                        self.save_current_prompt()?;
-                        self.state.mode = Mode::Normal;
+                        self.exit_insert_mode()?;
                     }
                     Mode::Archive | Mode::Folder | Mode::Preview => {
                         self.state.mode = Mode::Normal;
@@ -256,6 +293,11 @@ impl App {
                 self.duplicate_current_prompt()?;
             }
 
+            // Undo/Redo are handled directly in the run loop for insert mode
+            Action::Undo | Action::Redo => {
+                // These are handled in the event loop when in insert mode
+            }
+
             // TODO: Implement these
             Action::OpenFolder
             | Action::MoveToFolder
@@ -263,13 +305,48 @@ impl App {
             | Action::OpenSearch
             | Action::QuickOpen
             | Action::QuickInsertReference
-            | Action::Undo
-            | Action::Redo
             | Action::Export => {
                 self.state.notify("Feature not yet implemented", NotificationLevel::Warning);
             }
         }
 
+        Ok(())
+    }
+
+    /// Enter insert mode
+    fn enter_insert_mode(&mut self) {
+        if let Some(prompt) = self.state.selected_prompt() {
+            // Create textarea with current content
+            let lines: Vec<String> = prompt.content.lines().map(String::from).collect();
+            let textarea = TextArea::new(if lines.is_empty() {
+                vec![String::new()]
+            } else {
+                lines
+            });
+            self.editor = Some(textarea);
+            self.state.mode = Mode::Insert;
+            self.state.editor_focused = true;
+        }
+    }
+
+    /// Exit insert mode and save changes
+    fn exit_insert_mode(&mut self) -> Result<()> {
+        // Get content from editor and update prompt
+        if let Some(editor) = self.editor.take() {
+            let new_content = editor.lines().join("\n");
+            
+            if let Some(prompt) = self.state.selected_prompt_mut() {
+                prompt.content = new_content;
+                prompt.modified = chrono::Utc::now();
+            }
+            
+            // Save to disk
+            self.save_current_prompt()?;
+        }
+        
+        self.state.mode = Mode::Normal;
+        self.state.editor_focused = false;
+        
         Ok(())
     }
 
@@ -293,7 +370,8 @@ impl App {
         self.state.prompts.push(prompt);
         self.state.selected_index = self.state.prompts.len() - 1;
 
-        // Enter insert mode
+        // Enter insert mode with empty editor
+        self.editor = Some(TextArea::new(vec![String::new()]));
         self.state.mode = Mode::Insert;
         self.state.editor_focused = true;
 
@@ -304,6 +382,15 @@ impl App {
 
     /// Save the current prompt
     fn save_current_prompt(&mut self) -> Result<()> {
+        // If we have an active editor, update the prompt content first
+        if let Some(ref editor) = self.editor {
+            let new_content = editor.lines().join("\n");
+            if let Some(prompt) = self.state.selected_prompt_mut() {
+                prompt.content = new_content;
+                prompt.modified = chrono::Utc::now();
+            }
+        }
+
         if let Some(prompt) = self.state.selected_prompt() {
             save_prompt(prompt, &prompts_dir()?)?;
 

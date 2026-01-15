@@ -7,6 +7,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
+use tui_textarea::TextArea;
 
 use crate::config::Config;
 use crate::models::AppState;
@@ -17,7 +18,13 @@ use super::components::{
 };
 
 /// Render the entire application
-pub fn render(frame: &mut Frame, state: &AppState, config: &Config, archived_count: usize) {
+pub fn render(
+    frame: &mut Frame,
+    state: &AppState,
+    config: &Config,
+    archived_count: usize,
+    editor: Option<&TextArea>,
+) {
     let size = frame.area();
 
     // Main layout: title bar, content, status bar
@@ -46,7 +53,7 @@ pub fn render(frame: &mut Frame, state: &AppState, config: &Config, archived_cou
     render_prompt_list(frame, content_chunks[0], state, config);
 
     // Render editor/viewer
-    render_editor(frame, content_chunks[1], state, config);
+    render_editor(frame, content_chunks[1], state, config, editor);
 
     // Render status bar
     render_status_bar(frame, main_chunks[2], state, archived_count);
@@ -69,7 +76,13 @@ pub fn render(frame: &mut Frame, state: &AppState, config: &Config, archived_cou
 }
 
 /// Render the editor/viewer panel
-fn render_editor(frame: &mut Frame, area: Rect, state: &AppState, config: &Config) {
+fn render_editor(
+    frame: &mut Frame,
+    area: Rect,
+    state: &AppState,
+    config: &Config,
+    editor: Option<&TextArea>,
+) {
     let border_style = if state.editor_focused {
         Style::default().fg(Color::Cyan)
     } else {
@@ -79,18 +92,45 @@ fn render_editor(frame: &mut Frame, area: Rect, state: &AppState, config: &Confi
     // Collect all prompt names for reference validation
     let prompt_names: Vec<&str> = state.prompts.iter().map(|p| p.name.as_str()).collect();
 
+    // If in Insert mode and we have an editor, render the textarea
+    if state.mode == crate::models::Mode::Insert {
+        if let Some(textarea) = editor {
+            let title = if let Some(prompt) = state.selected_prompt() {
+                format!(" {} [EDITING] ", prompt.name)
+            } else {
+                " [EDITING] ".to_string()
+            };
+
+            // Clone the textarea and apply styling
+            let mut styled_textarea = textarea.clone();
+            styled_textarea.set_block(
+                Block::default()
+                    .title(title)
+                    .borders(Borders::ALL)
+                    .border_style(border_style),
+            );
+            styled_textarea.set_cursor_style(Style::default().add_modifier(Modifier::REVERSED));
+            styled_textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray));
+
+            frame.render_widget(&styled_textarea, area);
+            return;
+        }
+    }
+
+    // Normal/Preview mode: show read-only content with syntax highlighting
     let (title, content) = if let Some(prompt) = state.selected_prompt() {
         let title = format!(" {} ", prompt.name);
         let content = highlight_content(&prompt.content, &prompt_names, config);
         (title, content)
     } else {
-        (" No prompt selected ".to_string(), vec![Line::from("Select or create a prompt to get started")])
+        (
+            " No prompt selected ".to_string(),
+            vec![Line::from("Select or create a prompt to get started")],
+        )
     };
 
     // Add mode indicator to title
-    let full_title = if state.mode == crate::models::Mode::Insert {
-        format!("{}[EDITING] ", title)
-    } else if state.mode == crate::models::Mode::Preview {
+    let full_title = if state.mode == crate::models::Mode::Preview {
         format!("{}[PREVIEW] ", title)
     } else {
         title
@@ -103,7 +143,8 @@ fn render_editor(frame: &mut Frame, area: Rect, state: &AppState, config: &Confi
                 .borders(Borders::ALL)
                 .border_style(border_style),
         )
-        .wrap(Wrap { trim: false });
+        .wrap(Wrap { trim: false })
+        .scroll((state.editor_scroll_offset as u16, 0));
 
     frame.render_widget(paragraph, area);
 }

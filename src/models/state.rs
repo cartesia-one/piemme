@@ -37,6 +37,10 @@ pub struct AppState {
     pub list_scroll_offset: usize,
     /// Confirmation dialog state
     pub confirm_dialog: Option<ConfirmDialog>,
+    /// Editor content (when in insert mode)
+    pub editor_content: Option<String>,
+    /// Editor scroll offset (for long content)
+    pub editor_scroll_offset: usize,
 }
 
 impl AppState {
@@ -59,6 +63,8 @@ impl AppState {
             input_buffer: String::new(),
             list_scroll_offset: 0,
             confirm_dialog: None,
+            editor_content: None,
+            editor_scroll_offset: 0,
         }
     }
 
@@ -138,6 +144,35 @@ impl AppState {
     /// Check if there are any prompts
     pub fn has_prompts(&self) -> bool {
         !self.prompts.is_empty()
+    }
+
+    /// Start editing the current prompt
+    pub fn start_editing(&mut self) {
+        if let Some(prompt) = self.selected_prompt() {
+            self.editor_content = Some(prompt.content.clone());
+            self.editor_scroll_offset = 0;
+        }
+    }
+
+    /// Stop editing and return the edited content if any
+    pub fn stop_editing(&mut self) -> Option<String> {
+        self.editor_content.take()
+    }
+
+    /// Get the current editor content for display
+    pub fn get_editor_content(&self) -> Option<&str> {
+        self.editor_content.as_deref()
+    }
+
+    /// Scroll editor up by n lines
+    pub fn scroll_editor_up(&mut self, n: usize) {
+        self.editor_scroll_offset = self.editor_scroll_offset.saturating_sub(n);
+    }
+
+    /// Scroll editor down by n lines
+    pub fn scroll_editor_down(&mut self, n: usize, max_lines: usize, visible_height: usize) {
+        let max_scroll = max_lines.saturating_sub(visible_height);
+        self.editor_scroll_offset = (self.editor_scroll_offset + n).min(max_scroll);
     }
 }
 
