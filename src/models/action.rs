@@ -155,6 +155,66 @@ pub enum Action {
     /// Confirm new folder creation
     ConfirmNewFolder,
 
+    // Vim-style editor actions
+    /// Enter Vim Insert mode (from Vim Normal)
+    VimEnterInsert,
+    /// Enter Vim Insert mode at end of line (A)
+    VimEnterInsertEnd,
+    /// Enter Vim Insert mode at start of line (I)
+    VimEnterInsertStart,
+    /// Open new line below and enter insert (o)
+    VimOpenBelow,
+    /// Open new line above and enter insert (O)
+    VimOpenAbove,
+    /// Exit to Vim Normal mode (Esc in insert/visual)
+    VimExitToNormal,
+    /// Enter Visual mode (v)
+    VimEnterVisual,
+    /// Enter Visual Line mode (V)
+    VimEnterVisualLine,
+    /// Vim move cursor left (h)
+    VimLeft,
+    /// Vim move cursor down (j)
+    VimDown,
+    /// Vim move cursor up (k)
+    VimUp,
+    /// Vim move cursor right (l)
+    VimRight,
+    /// Vim move to start of line (0)
+    VimLineStart,
+    /// Vim move to first non-blank (^)
+    VimFirstNonBlank,
+    /// Vim move to end of line ($)
+    VimLineEnd,
+    /// Vim move word forward (w)
+    VimWordForward,
+    /// Vim move word backward (b)
+    VimWordBackward,
+    /// Vim move to end of word (e)
+    VimWordEnd,
+    /// Vim move to start of file (gg)
+    VimGoToTop,
+    /// Vim move to end of file (G)
+    VimGoToBottom,
+    /// Vim delete character under cursor (x)
+    VimDeleteChar,
+    /// Vim delete to end of line (D)
+    VimDeleteToEnd,
+    /// Vim delete entire line (dd)
+    VimDeleteLine,
+    /// Vim change to end of line (C)
+    VimChangeToEnd,
+    /// Vim change entire line (cc)
+    VimChangeLine,
+    /// Vim yank (copy) selection/line (y/yy)
+    VimYank,
+    /// Vim put (paste) after cursor (p)
+    VimPut,
+    /// Vim put (paste) before cursor (P)
+    VimPutBefore,
+    /// Extend selection with Shift+Arrow (hybrid mode)
+    ExtendSelection,
+
     // No action (used for unhandled keys)
     None,
 }

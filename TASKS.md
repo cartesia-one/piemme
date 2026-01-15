@@ -147,33 +147,56 @@
 - [x] Implement `Enter`/`i` to enter Insert mode
 - [x] Implement `Esc` to exit Insert mode
 - [x] Visual mode indicator update
-- [x] Position cursor at end of file when entering Insert mode
+- [x] Position cursor at start of file when entering editor
 
-### 6.2 Text Editor Integration
-- [x] Configure tui-textarea
-- [x] Implement basic text input
-- [x] Implement cursor movement
-- [x] Implement `Ctrl+←`/`Ctrl+→` word movement
+### 6.2 Vim-Style Editor Sub-Modes
+- [x] Define `EditorMode` enum (VimNormal, VimInsert, VimVisual, VimVisualLine)
+- [x] Add `editor_mode` to AppState
+- [x] Enter editor in Vim Normal mode by default
+- [x] Implement `i` to enter Vim Insert mode from Vim Normal
+- [x] Implement `I` for insert at line start
+- [x] Implement `a` for append after cursor
+- [x] Implement `A` for append at end of line
+- [x] Implement `o`/`O` for open line below/above
+- [x] Implement `Esc` to exit Vim Insert back to Vim Normal
+- [x] Implement `Esc` in Vim Normal to exit editor entirely
+- [x] Implement `v` for Visual mode (character-wise)
+- [x] Implement `V` for Visual Line mode
+
+### 6.3 Vim Navigation (in Vim Normal/Visual)
+- [x] Implement `h`/`j`/`k`/`l` cursor movement
+- [x] Implement arrow keys for cursor movement
+- [x] Implement `w`/`b`/`e` word navigation
+- [x] Implement `0`/`^`/`$` line navigation
+- [x] Implement `gg`/`G` file start/end
 - [x] Implement `Home`/`End` line navigation
-- [x] Implement `Ctrl+Home`/`Ctrl+End` document navigation
 
-### 6.3 Edit Operations
-- [x] Implement undo (`Ctrl+z`)
-- [x] Implement redo (`Ctrl+y`)
-- [x] Implement text selection (`Ctrl+a` for select all, `Shift+Arrow` for keyboard selection)
-- [x] Implement copy/cut/paste within editor (`Ctrl+c`/`Ctrl+v`)
+### 6.4 Vim Editing Commands
+- [x] Implement `x` delete character
+- [x] Implement `d` delete line (simplified dd)
+- [x] Implement `D` delete to end of line
+- [x] Implement `c` change line (simplified cc)
+- [x] Implement `C` change to end of line
+- [x] Implement `u` undo
+- [x] Implement `Ctrl+r` redo
 
-### 6.4 Mouse Support
-- [x] Enable mouse capture in terminal
-- [x] Handle mouse scroll events in editor
-- [ ] Mouse click to position cursor (not supported by tui-textarea)
-- [ ] Mouse drag to select text (not supported by tui-textarea)
+### 6.5 Vim Clipboard Operations
+- [x] Implement `y` yank (copy) line/selection
+- [x] Implement `p` put (paste) after cursor
+- [x] Implement `P` put (paste) before cursor
+- [x] Integrate with system clipboard
 
-### 6.5 Auto-Save
-- [x] Save on exit from Insert mode
-- [x] Implement explicit save (`Ctrl+s`)
-- [x] Update modified timestamp
-- [x] Update index after save
+### 6.6 Hybrid Editor Features
+- [x] Support `Shift+Arrow` for selection in all editor modes
+- [x] Support `Ctrl+a` for select all
+- [x] Support `Ctrl+c`/`Ctrl+v` in Vim Insert mode
+- [x] Support `Ctrl+z`/`Ctrl+y` in Vim Insert mode
+
+### 6.7 Visual Feedback
+- [x] Show editor sub-mode in status bar
+- [x] Change editor border color based on sub-mode
+- [x] Update help overlay with vim keybindings
+- [x] Different cursor styles per mode
 
 ---
 

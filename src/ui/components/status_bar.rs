@@ -8,28 +8,55 @@ use ratatui::{
     Frame,
 };
 
-use crate::models::{AppState, NotificationLevel};
+use crate::models::{AppState, EditorMode, NotificationLevel};
 
 /// Render the status bar
 pub fn render_status_bar(frame: &mut Frame, area: Rect, state: &AppState, archived_count: usize) {
     let mut spans = Vec::new();
 
-    // Mode indicator
-    let mode_color = match state.mode {
-        crate::models::Mode::Normal => Color::Blue,
-        crate::models::Mode::Insert => Color::Green,
-        crate::models::Mode::Archive => Color::Yellow,
-        crate::models::Mode::Folder => Color::Magenta,
-        crate::models::Mode::Preview => Color::Cyan,
-    };
-    
-    spans.push(Span::styled(
-        format!(" [{}] ", state.mode.as_str()),
-        Style::default()
-            .fg(Color::Black)
-            .bg(mode_color)
-            .add_modifier(Modifier::BOLD),
-    ));
+    // Mode indicator with vim editor sub-mode
+    if state.mode == crate::models::Mode::Insert {
+        // Show vim-style mode indicator when in editor
+        let (mode_text, mode_color) = match state.editor_mode {
+            EditorMode::VimNormal => ("NORMAL", Color::Blue),
+            EditorMode::VimInsert => ("INSERT", Color::Green),
+            EditorMode::VimVisual => ("VISUAL", Color::Magenta),
+            EditorMode::VimVisualLine => ("V-LINE", Color::Magenta),
+        };
+        
+        spans.push(Span::styled(
+            format!(" [{}] ", mode_text),
+            Style::default()
+                .fg(Color::Black)
+                .bg(mode_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+        
+        // Add "EDITING" indicator
+        spans.push(Span::styled(
+            " EDITING ",
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
+        ));
+    } else {
+        let mode_color = match state.mode {
+            crate::models::Mode::Normal => Color::Blue,
+            crate::models::Mode::Insert => Color::Green, // Won't reach here
+            crate::models::Mode::Archive => Color::Yellow,
+            crate::models::Mode::Folder => Color::Magenta,
+            crate::models::Mode::Preview => Color::Cyan,
+        };
+        
+        spans.push(Span::styled(
+            format!(" [{}] ", state.mode.as_str()),
+            Style::default()
+                .fg(Color::Black)
+                .bg(mode_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
     spans.push(Span::raw(" "));
 
     // Current prompt tags

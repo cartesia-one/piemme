@@ -2,7 +2,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::models::{Action, AppState, Mode};
+use crate::models::{Action, AppState, EditorMode, Mode};
 
 /// Handle a key event and return the corresponding action
 pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
@@ -53,7 +53,7 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
     // Mode-specific keybindings
     match state.mode {
         Mode::Normal => handle_normal_mode(key, state),
-        Mode::Insert => handle_insert_mode(key),
+        Mode::Insert => handle_insert_mode(key, state),
         Mode::Archive => handle_archive_mode(key),
         Mode::Folder => handle_folder_mode(key, state),
         Mode::Preview => handle_preview_mode(key),
@@ -135,20 +135,165 @@ fn handle_normal_mode(key: KeyEvent, _state: &AppState) -> Action {
     }
 }
 
-/// Handle keys in Insert mode
-fn handle_insert_mode(key: KeyEvent) -> Action {
+/// Handle keys in Insert mode (dispatch to appropriate vim sub-mode handler)
+fn handle_insert_mode(key: KeyEvent, state: &AppState) -> Action {
+    match state.editor_mode {
+        EditorMode::VimNormal => handle_vim_normal_mode(key),
+        EditorMode::VimInsert => handle_vim_insert_mode(key),
+        EditorMode::VimVisual | EditorMode::VimVisualLine => handle_vim_visual_mode(key, state),
+    }
+}
+
+/// Handle keys in Vim Normal mode (within the editor)
+fn handle_vim_normal_mode(key: KeyEvent) -> Action {
     match key.code {
+        // Exit editor entirely
         KeyCode::Esc => Action::ExitMode,
+        
+        // Save
         KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Save,
+        
+        // Enter Vim Insert mode
+        KeyCode::Char('i') => Action::VimEnterInsert,
+        KeyCode::Char('I') => Action::VimEnterInsertStart,
+        KeyCode::Char('a') => Action::VimEnterInsert, // Will move cursor right first in app.rs
+        KeyCode::Char('A') => Action::VimEnterInsertEnd,
+        KeyCode::Char('o') => Action::VimOpenBelow,
+        KeyCode::Char('O') => Action::VimOpenAbove,
+        
+        // Visual modes
+        KeyCode::Char('v') => Action::VimEnterVisual,
+        KeyCode::Char('V') => Action::VimEnterVisualLine,
+        
+        // Hybrid: Shift+Arrow for selection (check BEFORE plain arrows)
+        KeyCode::Left if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Right if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        
+        // Movement (plain arrows)
+        KeyCode::Char('h') | KeyCode::Left => Action::VimLeft,
+        KeyCode::Char('j') | KeyCode::Down => Action::VimDown,
+        KeyCode::Char('k') | KeyCode::Up => Action::VimUp,
+        KeyCode::Char('l') | KeyCode::Right => Action::VimRight,
+        KeyCode::Char('0') | KeyCode::Home => Action::VimLineStart,
+        KeyCode::Char('^') => Action::VimFirstNonBlank,
+        KeyCode::Char('$') | KeyCode::End => Action::VimLineEnd,
+        KeyCode::Char('w') => Action::VimWordForward,
+        KeyCode::Char('b') => Action::VimWordBackward,
+        KeyCode::Char('e') => Action::VimWordEnd,
+        KeyCode::Char('g') => Action::VimGoToTop,
+        KeyCode::Char('G') => Action::VimGoToBottom,
+        
+        // Editing
+        KeyCode::Char('x') | KeyCode::Delete => Action::VimDeleteChar,
+        KeyCode::Char('D') => Action::VimDeleteToEnd,
+        KeyCode::Char('C') => Action::VimChangeToEnd,
+        KeyCode::Char('d') => Action::VimDeleteLine, // Simplified: 'd' alone deletes line (dd)
+        KeyCode::Char('c') => Action::VimChangeLine, // Simplified: 'c' alone changes line (cc)
+        
+        // Clipboard (vim style)
+        KeyCode::Char('y') => Action::VimYank,
+        KeyCode::Char('p') => Action::VimPut,
+        KeyCode::Char('P') => Action::VimPutBefore,
+        
+        // Undo/Redo
+        KeyCode::Char('u') => Action::Undo,
+        KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
+        
+        // Open reference popup
+        KeyCode::Char('r') if !key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
+        
+        // Help
+        KeyCode::Char('?') => Action::OpenHelp,
+        
+        _ => Action::None,
+    }
+}
+
+/// Handle keys in Vim Insert mode (actual text editing)
+fn handle_vim_insert_mode(key: KeyEvent) -> Action {
+    match key.code {
+        // Exit to Vim Normal mode
+        KeyCode::Esc => Action::VimExitToNormal,
+        
+        // Save (also exits to normal)
+        KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Save,
+        
+        // Standard editor shortcuts that work in insert mode
         KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Undo,
         KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
         KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CopySelection,
         KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Paste,
         KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::QuickInsertReference,
-        // Note: CTRL+i sends Tab in terminals, so we use CTRL+r for reference popup
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
-        _ => Action::None, // Let tui-textarea handle other keys
+        
+        // Hybrid: Shift+Arrow for selection while in insert mode
+        KeyCode::Left if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Right if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
+        
+        // Help
+        KeyCode::Char('?') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenHelp,
+        
+        // All other keys handled by tui-textarea
+        _ => Action::None,
+    }
+}
+
+/// Handle keys in Vim Visual modes
+fn handle_vim_visual_mode(key: KeyEvent, state: &AppState) -> Action {
+    match key.code {
+        // Exit visual mode
+        KeyCode::Esc => Action::VimExitToNormal,
+        
+        // Ctrl+A to select all
+        KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
+        
+        // Hybrid: Shift+Arrow continues selection (check BEFORE plain arrows)
+        KeyCode::Left if key.modifiers.contains(KeyModifiers::SHIFT) => Action::VimLeft,
+        KeyCode::Right if key.modifiers.contains(KeyModifiers::SHIFT) => Action::VimRight,
+        KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => Action::VimUp,
+        KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => Action::VimDown,
+        
+        // Movement (extends selection)
+        KeyCode::Char('h') | KeyCode::Left => Action::VimLeft,
+        KeyCode::Char('j') | KeyCode::Down => Action::VimDown,
+        KeyCode::Char('k') | KeyCode::Up => Action::VimUp,
+        KeyCode::Char('l') | KeyCode::Right => Action::VimRight,
+        KeyCode::Char('0') | KeyCode::Home => Action::VimLineStart,
+        KeyCode::Char('^') => Action::VimFirstNonBlank,
+        KeyCode::Char('$') | KeyCode::End => Action::VimLineEnd,
+        KeyCode::Char('w') => Action::VimWordForward,
+        KeyCode::Char('b') => Action::VimWordBackward,
+        KeyCode::Char('e') => Action::VimWordEnd,
+        KeyCode::Char('g') => Action::VimGoToTop,
+        KeyCode::Char('G') => Action::VimGoToBottom,
+        
+        // Actions on selection
+        KeyCode::Char('d') | KeyCode::Char('x') => Action::VimDeleteChar, // Delete selection
+        KeyCode::Char('c') => Action::VimChangeLine, // Change selection
+        KeyCode::Char('y') => Action::VimYank, // Yank selection
+        
+        // Switch visual modes
+        KeyCode::Char('v') => {
+            if state.editor_mode == EditorMode::VimVisual {
+                Action::VimExitToNormal // Toggle off
+            } else {
+                Action::VimEnterVisual // Switch to char-wise
+            }
+        }
+        KeyCode::Char('V') => {
+            if state.editor_mode == EditorMode::VimVisualLine {
+                Action::VimExitToNormal // Toggle off
+            } else {
+                Action::VimEnterVisualLine // Switch to line-wise
+            }
+        }
+        
+        _ => Action::None,
     }
 }
 

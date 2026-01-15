@@ -1,13 +1,13 @@
 //! Main application logic
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyEventKind};
+use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 use std::time::Duration;
-use tui_textarea::TextArea;
+use tui_textarea::{CursorMove, TextArea};
 
 use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, ConfirmDialog, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState};
+use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
@@ -213,76 +213,11 @@ impl<'a> App<'a> {
                             continue;
                         }
 
-                        // In Insert mode, let the editor handle most keys
+                        // In Insert mode, handle vim-style sub-modes
                         if self.state.mode == Mode::Insert {
                             if let Some(ref mut editor) = self.editor {
-                                // Check for special keys that exit insert mode or perform actions
                                 let action = handle_key_event(key, &self.state);
-                                match action {
-                                    Action::ExitMode | Action::Save => {
-                                        self.handle_action(action)?;
-                                    }
-                                    Action::Undo => {
-                                        editor.undo();
-                                    }
-                                    Action::Redo => {
-                                        editor.redo();
-                                    }
-                                    Action::SelectAll => {
-                                        editor.select_all();
-                                    }
-                                    Action::CopySelection => {
-                                        // Copy selected text without rendering
-                                        editor.copy(); // Copies selection to yank buffer
-                                        let selected_text = editor.yank_text();
-                                        if !selected_text.is_empty() {
-                                            match arboard::Clipboard::new() {
-                                                Ok(mut clipboard) => {
-                                                    if let Err(e) = clipboard.set_text(&selected_text) {
-                                                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                                                    } else {
-                                                        std::thread::sleep(Duration::from_millis(100));
-                                                        self.state.notify("Copied selection", NotificationLevel::Success);
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Action::Paste => {
-                                        // Paste from system clipboard
-                                        match arboard::Clipboard::new() {
-                                            Ok(mut clipboard) => {
-                                                match clipboard.get_text() {
-                                                    Ok(text) => {
-                                                        editor.insert_str(&text);
-                                                    }
-                                                    Err(e) => {
-                                                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                                                    }
-                                                }
-                                            }
-                                            Err(e) => {
-                                                self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                                            }
-                                        }
-                                    }
-                                    Action::OpenHelp => {
-                                        self.handle_action(action)?;
-                                    }
-                                    Action::Quit => {
-                                        self.handle_action(action)?;
-                                    }
-                                    Action::OpenReferencePopup => {
-                                        self.handle_action(action)?;
-                                    }
-                                    _ => {
-                                        // Let textarea handle the input
-                                        editor.input(key);
-                                    }
-                                }
+                                self.handle_vim_editor_action(action, key)?;
                             }
                         } else {
                             let action = handle_key_event(key, &self.state);
@@ -585,12 +520,45 @@ impl<'a> App<'a> {
             Action::SelectAll | Action::CopySelection | Action::Paste => {
                 // These are handled directly in the event loop when in Insert mode
             }
+            
+            // Vim-style editor actions (handled in handle_vim_editor_action)
+            Action::VimEnterInsert
+            | Action::VimEnterInsertEnd
+            | Action::VimEnterInsertStart
+            | Action::VimOpenBelow
+            | Action::VimOpenAbove
+            | Action::VimExitToNormal
+            | Action::VimEnterVisual
+            | Action::VimEnterVisualLine
+            | Action::VimLeft
+            | Action::VimDown
+            | Action::VimUp
+            | Action::VimRight
+            | Action::VimLineStart
+            | Action::VimFirstNonBlank
+            | Action::VimLineEnd
+            | Action::VimWordForward
+            | Action::VimWordBackward
+            | Action::VimWordEnd
+            | Action::VimGoToTop
+            | Action::VimGoToBottom
+            | Action::VimDeleteChar
+            | Action::VimDeleteToEnd
+            | Action::VimDeleteLine
+            | Action::VimChangeToEnd
+            | Action::VimChangeLine
+            | Action::VimYank
+            | Action::VimPut
+            | Action::VimPutBefore
+            | Action::ExtendSelection => {
+                // These are handled in handle_vim_editor_action when in Insert mode
+            }
         }
 
         Ok(())
     }
 
-    /// Enter insert mode
+    /// Enter insert mode (starts in Vim Normal mode within the editor)
     fn enter_insert_mode(&mut self) {
         if let Some(prompt) = self.state.selected_prompt() {
             // Create textarea with current content
@@ -601,20 +569,15 @@ impl<'a> App<'a> {
                 lines
             });
 
-            // Move cursor to end of file
-            let line_count = textarea.lines().len();
-            if line_count > 0 {
-                let last_line_idx = line_count - 1;
-                let last_line_len = textarea.lines()[last_line_idx].len();
-                textarea.move_cursor(tui_textarea::CursorMove::Jump(
-                    last_line_idx as u16,
-                    last_line_len as u16,
-                ));
-            }
+            // Start cursor at beginning of file in vim normal mode
+            textarea.move_cursor(CursorMove::Top);
+            textarea.move_cursor(CursorMove::Head);
 
             self.editor = Some(textarea);
             self.state.mode = Mode::Insert;
+            self.state.editor_mode = EditorMode::VimNormal; // Start in Vim Normal mode
             self.state.editor_focused = true;
+            self.state.visual_anchor = None;
         }
     }
 
@@ -634,9 +597,338 @@ impl<'a> App<'a> {
         }
         
         self.state.mode = Mode::Normal;
+        self.state.editor_mode = EditorMode::VimNormal; // Reset editor mode
         self.state.editor_focused = false;
+        self.state.visual_anchor = None;
         
         Ok(())
+    }
+
+    /// Handle vim-style editor actions when in Insert mode
+    fn handle_vim_editor_action(&mut self, action: Action, key: KeyEvent) -> Result<()> {
+        // Handle actions that need to exit insert mode first (borrow-sensitive)
+        match action {
+            Action::ExitMode => {
+                return self.exit_insert_mode();
+            }
+            Action::Save => {
+                self.save_current_prompt()?;
+                self.state.editor_mode = EditorMode::VimNormal;
+                self.state.visual_anchor = None;
+                return Ok(());
+            }
+            Action::OpenHelp => {
+                self.state.show_help = !self.state.show_help;
+                if self.state.show_help {
+                    self.state.help_scroll_offset = 0;
+                }
+                return Ok(());
+            }
+            Action::OpenReferencePopup => {
+                self.open_reference_popup();
+                return Ok(());
+            }
+            Action::QuickInsertReference => {
+                self.state.notify("Quick insert not yet implemented", NotificationLevel::Warning);
+                return Ok(());
+            }
+            Action::Quit => {
+                self.state.should_quit = true;
+                return Ok(());
+            }
+            _ => {}
+        }
+
+        // Now handle actions that operate on the editor
+        let editor = match self.editor.as_mut() {
+            Some(e) => e,
+            None => return Ok(()),
+        };
+
+        // Collect yanked text for clipboard operations that need it
+        let mut clipboard_text: Option<String> = None;
+
+        match action {
+            // Enter Vim Insert mode
+            Action::VimEnterInsert => {
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            Action::VimEnterInsertStart => {
+                editor.move_cursor(CursorMove::Head);
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            Action::VimEnterInsertEnd => {
+                editor.move_cursor(CursorMove::End);
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            Action::VimOpenBelow => {
+                editor.move_cursor(CursorMove::End);
+                editor.insert_newline();
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            Action::VimOpenAbove => {
+                editor.move_cursor(CursorMove::Head);
+                editor.insert_newline();
+                editor.move_cursor(CursorMove::Up);
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            
+            // Exit to Vim Normal mode (from Insert or Visual)
+            Action::VimExitToNormal => {
+                self.state.editor_mode = EditorMode::VimNormal;
+                self.state.visual_anchor = None;
+                editor.cancel_selection();
+            }
+            
+            // Visual modes
+            Action::VimEnterVisual => {
+                self.state.visual_anchor = Some(editor.cursor());
+                self.state.editor_mode = EditorMode::VimVisual;
+                editor.start_selection();
+            }
+            Action::VimEnterVisualLine => {
+                self.state.visual_anchor = Some(editor.cursor());
+                self.state.editor_mode = EditorMode::VimVisualLine;
+                editor.move_cursor(CursorMove::Head);
+                editor.start_selection();
+                editor.move_cursor(CursorMove::End);
+            }
+            
+            // Movement actions
+            Action::VimLeft => {
+                editor.move_cursor(CursorMove::Back);
+            }
+            Action::VimRight => {
+                editor.move_cursor(CursorMove::Forward);
+            }
+            Action::VimUp => {
+                editor.move_cursor(CursorMove::Up);
+            }
+            Action::VimDown => {
+                editor.move_cursor(CursorMove::Down);
+            }
+            Action::VimLineStart => {
+                editor.move_cursor(CursorMove::Head);
+            }
+            Action::VimFirstNonBlank => {
+                editor.move_cursor(CursorMove::Head);
+                let (row, _) = editor.cursor();
+                if let Some(line) = editor.lines().get(row) {
+                    let first_non_blank = line.chars().take_while(|c| c.is_whitespace()).count();
+                    editor.move_cursor(CursorMove::Jump(row as u16, first_non_blank as u16));
+                }
+            }
+            Action::VimLineEnd => {
+                editor.move_cursor(CursorMove::End);
+            }
+            Action::VimWordForward => {
+                editor.move_cursor(CursorMove::WordForward);
+            }
+            Action::VimWordBackward => {
+                editor.move_cursor(CursorMove::WordBack);
+            }
+            Action::VimWordEnd => {
+                editor.move_cursor(CursorMove::WordForward);
+                editor.move_cursor(CursorMove::Back);
+            }
+            Action::VimGoToTop => {
+                editor.move_cursor(CursorMove::Top);
+                editor.move_cursor(CursorMove::Head);
+            }
+            Action::VimGoToBottom => {
+                editor.move_cursor(CursorMove::Bottom);
+                editor.move_cursor(CursorMove::Head);
+            }
+            
+            // Editing actions with clipboard
+            Action::VimDeleteChar => {
+                if self.state.editor_mode.is_visual() {
+                    editor.cut();
+                    clipboard_text = Some(editor.yank_text());
+                    self.state.editor_mode = EditorMode::VimNormal;
+                    self.state.visual_anchor = None;
+                } else {
+                    editor.delete_char();
+                }
+            }
+            Action::VimDeleteToEnd => {
+                editor.start_selection();
+                editor.move_cursor(CursorMove::End);
+                editor.cut();
+                clipboard_text = Some(editor.yank_text());
+            }
+            Action::VimDeleteLine => {
+                if self.state.editor_mode.is_visual() {
+                    editor.cut();
+                    clipboard_text = Some(editor.yank_text());
+                    self.state.editor_mode = EditorMode::VimNormal;
+                    self.state.visual_anchor = None;
+                } else {
+                    editor.move_cursor(CursorMove::Head);
+                    editor.start_selection();
+                    editor.move_cursor(CursorMove::Down);
+                    editor.cut();
+                    clipboard_text = Some(editor.yank_text());
+                }
+            }
+            Action::VimChangeToEnd => {
+                editor.start_selection();
+                editor.move_cursor(CursorMove::End);
+                editor.cut();
+                clipboard_text = Some(editor.yank_text());
+                self.state.editor_mode = EditorMode::VimInsert;
+                self.state.visual_anchor = None;
+            }
+            Action::VimChangeLine => {
+                if self.state.editor_mode.is_visual() {
+                    editor.cut();
+                    clipboard_text = Some(editor.yank_text());
+                    self.state.editor_mode = EditorMode::VimInsert;
+                    self.state.visual_anchor = None;
+                } else {
+                    editor.move_cursor(CursorMove::Head);
+                    editor.start_selection();
+                    editor.move_cursor(CursorMove::End);
+                    editor.cut();
+                    clipboard_text = Some(editor.yank_text());
+                    self.state.editor_mode = EditorMode::VimInsert;
+                }
+            }
+            
+            // Clipboard actions
+            Action::VimYank => {
+                if self.state.editor_mode.is_visual() {
+                    editor.copy();
+                    clipboard_text = Some(editor.yank_text());
+                    self.state.editor_mode = EditorMode::VimNormal;
+                    self.state.visual_anchor = None;
+                    editor.cancel_selection();
+                } else {
+                    let (row, col) = editor.cursor();
+                    editor.move_cursor(CursorMove::Head);
+                    editor.start_selection();
+                    editor.move_cursor(CursorMove::End);
+                    editor.copy();
+                    clipboard_text = Some(editor.yank_text());
+                    editor.cancel_selection();
+                    editor.move_cursor(CursorMove::Jump(row as u16, col as u16));
+                }
+            }
+            Action::VimPut => {
+                if let Ok(mut cb) = arboard::Clipboard::new() {
+                    if let Ok(text) = cb.get_text() {
+                        editor.insert_str(&text);
+                    }
+                }
+            }
+            Action::VimPutBefore => {
+                editor.move_cursor(CursorMove::Back);
+                if let Ok(mut cb) = arboard::Clipboard::new() {
+                    if let Ok(text) = cb.get_text() {
+                        editor.insert_str(&text);
+                    }
+                }
+            }
+            
+            // Standard editing actions
+            Action::Undo => {
+                editor.undo();
+            }
+            Action::Redo => {
+                editor.redo();
+            }
+            Action::SelectAll => {
+                editor.select_all();
+                self.state.editor_mode = EditorMode::VimVisual;
+                self.state.visual_anchor = Some((0, 0));
+            }
+            Action::CopySelection => {
+                editor.copy();
+                clipboard_text = Some(editor.yank_text());
+            }
+            Action::Paste => {
+                if let Ok(mut cb) = arboard::Clipboard::new() {
+                    if let Ok(text) = cb.get_text() {
+                        editor.insert_str(&text);
+                    }
+                }
+            }
+            
+            // Hybrid: Extend selection with Shift+Arrow
+            Action::ExtendSelection => {
+                if !self.state.editor_mode.is_visual() {
+                    self.state.visual_anchor = Some(editor.cursor());
+                    self.state.editor_mode = EditorMode::VimVisual;
+                    editor.start_selection();
+                }
+                editor.input(key);
+            }
+            
+            Action::None => {
+                if self.state.editor_mode == EditorMode::VimInsert {
+                    editor.input(key);
+                }
+            }
+            
+            _ => {}
+        }
+
+        // Copy to system clipboard if we have text to copy
+        if let Some(text) = clipboard_text {
+            if !text.is_empty() {
+                if let Ok(mut cb) = arboard::Clipboard::new() {
+                    let _ = cb.set_text(&text);
+                }
+            }
+        }
+        
+        Ok(())
+    }
+
+    /// Copy yank buffer to system clipboard
+    fn copy_yank_to_clipboard(&mut self, editor: &TextArea) {
+        let yanked = editor.yank_text();
+        if !yanked.is_empty() {
+            match arboard::Clipboard::new() {
+                Ok(mut clipboard) => {
+                    if let Err(e) = clipboard.set_text(&yanked) {
+                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                    }
+                }
+                Err(e) => {
+                    self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                }
+            }
+        }
+    }
+
+    /// Paste from system clipboard
+    fn paste_from_clipboard(&mut self, editor: &mut TextArea) {
+        match arboard::Clipboard::new() {
+            Ok(mut clipboard) => {
+                match clipboard.get_text() {
+                    Ok(text) => {
+                        editor.insert_str(&text);
+                    }
+                    Err(e) => {
+                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                    }
+                }
+            }
+            Err(e) => {
+                self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+            }
+        }
     }
 
     /// Create a new prompt
@@ -660,10 +952,12 @@ impl<'a> App<'a> {
         self.state.prompts.push(prompt);
         self.state.selected_index = self.state.prompts.len() - 1;
 
-        // Enter insert mode with empty editor
+        // Enter insert mode with empty editor (start in Vim Insert for new prompts)
         self.editor = Some(TextArea::new(vec![String::new()]));
         self.state.mode = Mode::Insert;
+        self.state.editor_mode = EditorMode::VimInsert; // New prompt goes directly to insert
         self.state.editor_focused = true;
+        self.state.visual_anchor = None;
 
         self.state.notify("Created new prompt", NotificationLevel::Success);
 

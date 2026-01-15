@@ -1,6 +1,6 @@
 //! Application state management
 
-use super::{Action, Mode, Prompt};
+use super::{Action, EditorMode, Mode, Prompt};
 
 /// The complete application state
 #[derive(Debug)]
@@ -51,6 +51,10 @@ pub struct AppState {
     pub tag_selector: Option<TagSelectorState>,
     /// Folder selector popup state
     pub folder_selector: Option<FolderSelectorState>,
+    /// Editor sub-mode (Vim Normal/Insert/Visual)
+    pub editor_mode: EditorMode,
+    /// Visual mode anchor position (row, col) for selection start
+    pub visual_anchor: Option<(usize, usize)>,
 }
 
 impl AppState {
@@ -80,6 +84,8 @@ impl AppState {
             reference_popup: None,
             tag_selector: None,
             folder_selector: None,
+            editor_mode: EditorMode::VimNormal,
+            visual_anchor: None,
         }
     }
 

@@ -16,6 +16,42 @@ pub enum Mode {
     Preview,
 }
 
+/// Editor sub-mode when in Insert mode (Vim-style editing)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EditorMode {
+    /// Vim Normal mode - navigate within editor, use vim commands
+    #[default]
+    VimNormal,
+    /// Vim Insert mode - actually typing/editing text
+    VimInsert,
+    /// Vim Visual mode - character-wise selection
+    VimVisual,
+    /// Vim Visual Line mode - line-wise selection
+    VimVisualLine,
+}
+
+impl EditorMode {
+    /// Get a display string for the editor mode
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            EditorMode::VimNormal => "NORMAL",
+            EditorMode::VimInsert => "INSERT",
+            EditorMode::VimVisual => "VISUAL",
+            EditorMode::VimVisualLine => "V-LINE",
+        }
+    }
+
+    /// Check if the mode allows text input
+    pub fn allows_text_input(&self) -> bool {
+        matches!(self, EditorMode::VimInsert)
+    }
+
+    /// Check if the mode is a visual selection mode
+    pub fn is_visual(&self) -> bool {
+        matches!(self, EditorMode::VimVisual | EditorMode::VimVisualLine)
+    }
+}
+
 impl Mode {
     /// Get a display string for the mode
     pub fn as_str(&self) -> &'static str {

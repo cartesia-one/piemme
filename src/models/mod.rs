@@ -6,7 +6,7 @@ pub mod prompt;
 mod state;
 
 pub use action::Action;
-pub use mode::Mode;
+pub use mode::{EditorMode, Mode};
 pub use prompt::Prompt;
 pub use state::{
     AppState, ConfirmDialog, FolderSelectorMode, FolderSelectorState, Notification,

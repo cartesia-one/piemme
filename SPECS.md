@@ -186,10 +186,25 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 - Execute single-key commands
 - View prompt content (read-only in right panel)
 
-### 2. Insert Mode
-- Edit prompt content in right panel
-- Standard text editing keybindings
-- Exit with `Esc`
+### 2. Insert Mode (Editor Mode)
+- Opens the editor for the selected prompt
+- **Starts in Vim Normal mode** (not typing mode)
+- Contains three sub-modes:
+
+#### 2a. Vim Normal Mode (Editor Default)
+- Navigate within the editor using vim-style movements
+- Press `i` to enter Vim Insert mode for typing
+- Press `Esc` to exit editor and save
+
+#### 2b. Vim Insert Mode
+- Actually type and edit text
+- Press `Esc` to return to Vim Normal mode
+- Standard editor shortcuts (Ctrl+C, Ctrl+V, etc.) work here
+
+#### 2c. Vim Visual Mode
+- Select text using vim movements
+- Enter with `v` (character) or `V` (line)
+- Operate on selection with `d`, `y`, `c`
 
 ### 3. Archive Mode
 - View archived prompts (read-only)
@@ -226,8 +241,8 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | `k` / `↑` | Select previous prompt (up) |
 | `g` | Go to first prompt |
 | `G` | Go to last prompt |
-| `Enter` / `i` | Enter insert mode (edit selected prompt, cursor at end) |
-| `n` | Create new prompt |
+| `Enter` / `i` | Enter editor (Vim Normal mode) |
+| `n` | Create new prompt (enters Vim Insert mode directly) |
 | `r` | Rename selected prompt (opens rename popup with validation) |
 | `d` | Delete selected prompt (with confirmation) |
 | `y` | Copy rendered prompt to clipboard |
@@ -246,29 +261,77 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | `e` | Export prompt |
 | `Ctrl+d` | Duplicate selected prompt |
 
-### Insert Mode
+### Insert Mode (Editor)
+
+The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a prompt, you enter the editor in **Vim Normal mode** - you need to press `i` to start typing.
+
+#### Editor - Vim Normal Mode
 
 | Key | Action |
 |-----|--------|
-| `Esc` | Exit insert mode, save changes |
-| `Ctrl+s` | Save changes (explicit) |
+| `Esc` | Exit editor (save and return to Normal mode) |
+| `i` | Enter Vim Insert mode (at cursor) |
+| `I` | Enter Vim Insert mode (at line start) |
+| `a` | Append after cursor |
+| `A` | Append at end of line |
+| `o` | Open new line below and insert |
+| `O` | Open new line above and insert |
+| `h` / `←` | Move cursor left |
+| `j` / `↓` | Move cursor down |
+| `k` / `↑` | Move cursor up |
+| `l` / `→` | Move cursor right |
+| `w` | Move to next word |
+| `b` | Move to previous word |
+| `e` | Move to end of word |
+| `0` / `Home` | Move to line start |
+| `^` | Move to first non-blank character |
+| `$` / `End` | Move to line end |
+| `gg` | Move to file start |
+| `G` | Move to file end |
+| `x` / `Delete` | Delete character under cursor |
+| `d` | Delete entire line |
+| `D` | Delete to end of line |
+| `c` | Change entire line |
+| `C` | Change to end of line |
+| `u` | Undo |
+| `Ctrl+r` | Redo |
+| `y` | Yank (copy) current line |
+| `p` | Put (paste) after cursor |
+| `P` | Put (paste) before cursor |
+| `v` | Enter Visual mode (character-wise) |
+| `V` | Enter Visual Line mode |
+| `Shift+Arrow` | Extend selection (hybrid) |
+| `r` | Open reference insertion popup |
+| `?` | Open help |
+
+#### Editor - Vim Insert Mode
+
+| Key | Action |
+|-----|--------|
+| `Esc` | Return to Vim Normal mode |
+| `Ctrl+s` | Save changes |
 | `Ctrl+z` | Undo |
 | `Ctrl+y` | Redo |
 | `Ctrl+a` | Select all text |
-| `Ctrl+c` | Copy selected text to clipboard (without rendering) |
-| `Ctrl+v` | Paste from system clipboard |
-| `Ctrl+r` | Insert reference popup (fuzzy search prompts, inserts `[[prompt_name]]`) |
-| `Ctrl+l` | Quick insert reference (fuzzy search prompts) |
-| `Ctrl+←` | Move cursor word left |
-| `Ctrl+→` | Move cursor word right |
-| `Shift+Arrow` | Select text |
-| `Shift+Ctrl+Arrow` | Select text by word |
-| `Home` | Move to line start |
-| `End` | Move to line end |
-| `Shift+Home` | Select to line start |
-| `Shift+End` | Select to line end |
-| `Ctrl+Home` | Move to document start |
-| `Ctrl+End` | Move to document end |
+| `Ctrl+c` | Copy selected text |
+| `Ctrl+v` | Paste from clipboard |
+| `Ctrl+r` | Open reference insertion popup |
+| `Shift+Arrow` | Extend text selection (hybrid) |
+| (typing) | Insert text normally |
+
+#### Editor - Visual Mode
+
+| Key | Action |
+|-----|--------|
+| `Esc` | Exit to Vim Normal mode |
+| `h/j/k/l` or arrows | Extend selection |
+| `w/b/e/0/$` | Extend selection by word/line |
+| `d` / `x` | Delete selection |
+| `c` | Change selection (delete and enter Insert) |
+| `y` | Yank (copy) selection |
+| `v` | Toggle Visual mode off |
+| `V` | Switch to Visual Line mode |
+| `Ctrl+a` | Select all |
 
 ### Archive Mode
 
@@ -316,11 +379,64 @@ When pressing `Ctrl+r` in Insert mode:
 
 ---
 
-## Insert Mode Behavior
+## Editor Behavior (Insert Mode)
 
-When entering Insert mode:
-- Cursor is positioned at the **end of the file** for convenient editing
-- All changes are auto-saved when exiting Insert mode
+The editor uses a **hybrid Vim/normal editing model** that combines:
+- Vim-style modal editing (Normal/Insert/Visual modes within the editor)
+- Standard editor shortcuts (Ctrl+C, Ctrl+V, Shift+Arrow selection)
+
+### Entering the Editor
+
+| From | Action | Result |
+|------|--------|--------|
+| Normal Mode | Press `Enter` or `i` | Enter editor in **Vim Normal mode** (cursor at start) |
+| Normal Mode | Press `n` (new prompt) | Enter editor in **Vim Insert mode** (ready to type) |
+
+### Editor Sub-Modes
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      EDITOR FLOW                             │
+│                                                              │
+│   Normal Mode ──Enter/i──► Vim Normal ◄──Esc──┐             │
+│       ▲                        │               │             │
+│       │                        i               │             │
+│      Esc                       ▼               │             │
+│       │                   Vim Insert ──────────┤             │
+│       │                        │               │             │
+│       │                       Esc              │             │
+│       │                        ▼               │             │
+│       └────────────────── Vim Normal           │             │
+│                               │                │             │
+│                              v/V               │             │
+│                               ▼                │             │
+│                          Vim Visual ───────────┘             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Visual Feedback
+
+- **Border color** changes based on editor sub-mode:
+  - Blue: Vim Normal mode
+  - Green: Vim Insert mode  
+  - Magenta: Vim Visual mode
+- **Status bar** shows current sub-mode: `[NORMAL] EDITING`, `[INSERT] EDITING`, `[VISUAL] EDITING`
+- **Cursor style** differs per mode (block for Normal, line for Insert)
+
+### Hybrid Features
+
+The editor supports both Vim and traditional editing paradigms:
+
+| Feature | Vim Style | Traditional Style |
+|---------|-----------|-------------------|
+| Selection | `v` Visual mode + movements | `Shift+Arrow` keys |
+| Select All | (manual) | `Ctrl+a` |
+| Copy | `y` (yank) | `Ctrl+c` |
+| Paste | `p` (put) | `Ctrl+v` |
+| Undo | `u` | `Ctrl+z` |
+| Redo | `Ctrl+r` | `Ctrl+y` |
+
+All changes are auto-saved when exiting the editor (pressing `Esc` in Vim Normal mode).
 
 ---
 

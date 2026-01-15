@@ -116,22 +116,56 @@ fn render_editor(
     // If in Insert mode and we have an editor, render the textarea
     if state.mode == crate::models::Mode::Insert {
         if let Some(textarea) = editor {
+            // Build title with vim mode indicator
+            let vim_mode_str = state.editor_mode.as_str();
             let title = if let Some(prompt) = state.selected_prompt() {
-                format!(" {} [EDITING] ", prompt.name)
+                format!(" {} [{}] ", prompt.name, vim_mode_str)
             } else {
-                " [EDITING] ".to_string()
+                format!(" [{}] ", vim_mode_str)
             };
 
             // Clone the textarea and apply styling
             let mut styled_textarea = textarea.clone();
+            
+            // Choose border color based on vim mode
+            let editor_border_style = match state.editor_mode {
+                crate::models::EditorMode::VimNormal => Style::default().fg(Color::Blue),
+                crate::models::EditorMode::VimInsert => Style::default().fg(Color::Green),
+                crate::models::EditorMode::VimVisual | crate::models::EditorMode::VimVisualLine => {
+                    Style::default().fg(Color::Magenta)
+                }
+            };
+            
             styled_textarea.set_block(
                 Block::default()
                     .title(title)
                     .borders(Borders::ALL)
-                    .border_style(border_style),
+                    .border_style(editor_border_style),
             );
-            styled_textarea.set_cursor_style(Style::default().add_modifier(Modifier::REVERSED));
-            styled_textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray));
+            
+            // Different cursor styles for different vim modes
+            let cursor_style = match state.editor_mode {
+                crate::models::EditorMode::VimNormal => {
+                    // Block cursor for normal mode
+                    Style::default().bg(Color::White).fg(Color::Black)
+                }
+                crate::models::EditorMode::VimInsert => {
+                    // Line cursor for insert mode (reversed)
+                    Style::default().add_modifier(Modifier::REVERSED)
+                }
+                crate::models::EditorMode::VimVisual | crate::models::EditorMode::VimVisualLine => {
+                    // Highlight cursor for visual mode
+                    Style::default().bg(Color::Magenta).fg(Color::White)
+                }
+            };
+            styled_textarea.set_cursor_style(cursor_style);
+            
+            // Highlight current line in normal mode
+            if state.editor_mode == crate::models::EditorMode::VimNormal {
+                styled_textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray));
+            } else {
+                styled_textarea.set_cursor_line_style(Style::default());
+            }
 
             frame.render_widget(&styled_textarea, area);
             return;
