@@ -84,6 +84,10 @@ pub enum Action {
     ToggleFocus,
     /// Open help overlay
     OpenHelp,
+    /// Scroll help up
+    HelpScrollUp,
+    /// Scroll help down
+    HelpScrollDown,
     /// Close current overlay/popup
     CloseOverlay,
     /// Toggle selection in confirmation dialog (Yes/No)

@@ -12,14 +12,32 @@ use crate::models::AppState;
 
 /// Render the title bar
 pub fn render_title_bar(frame: &mut Frame, area: Rect, state: &AppState) {
-    let mut spans = vec![
-        Span::styled(
+    // Different title styling for archive mode
+    let (title_text, title_style) = if state.mode == crate::models::Mode::Archive {
+        (
+            " Piemme - Archive ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
+    } else {
+        (
             " Piemme ",
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
-        ),
-    ];
+        )
+    };
+
+    let mut spans = vec![Span::styled(title_text, title_style)];
+
+    // Archive mode indicator
+    if state.mode == crate::models::Mode::Archive {
+        spans.push(Span::styled(
+            "📦 ",
+            Style::default().fg(Color::Yellow),
+        ));
+    }
 
     // Current folder
     if let Some(folder) = &state.current_folder {

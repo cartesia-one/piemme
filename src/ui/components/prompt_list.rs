@@ -13,25 +13,41 @@ use crate::models::AppState;
 
 /// Render the prompt list
 pub fn render_prompt_list(frame: &mut Frame, area: Rect, state: &AppState, config: &Config) {
-    let title = format!(" Prompts ({}) ", state.prompts.len());
-    
-    let border_style = if state.editor_focused {
-        Style::default().fg(Color::DarkGray)
+    // Different title and styling for archive mode
+    let (title, title_style, border_color) = if state.mode == crate::models::Mode::Archive {
+        (
+            format!(" 📦 Archived ({}) ", state.prompts.len()),
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            Color::Yellow,
+        )
     } else {
-        Style::default().fg(Color::Cyan)
+        (
+            format!(" Prompts ({}) ", state.prompts.len()),
+            Style::default(),
+            if state.editor_focused { Color::DarkGray } else { Color::Cyan },
+        )
     };
+    
+    let border_style = Style::default().fg(border_color);
 
     // Handle empty list
     if state.prompts.is_empty() {
+        let (empty_text, hint_text) = if state.mode == crate::models::Mode::Archive {
+            ("  No archived prompts", "  Press 'Esc' to return")
+        } else {
+            ("  No prompts yet", "  Press 'n' to create")
+        };
+        
         let empty_msg = Paragraph::new(vec![
             Line::from(""),
-            Line::from("  No prompts yet"),
+            Line::from(empty_text),
             Line::from(""),
-            Line::from(Span::styled("  Press 'n' to create", Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(hint_text, Style::default().fg(Color::DarkGray))),
         ])
         .block(
             Block::default()
                 .title(title)
+                .title_style(title_style)
                 .borders(Borders::ALL)
                 .border_style(border_style),
         );
@@ -75,6 +91,7 @@ pub fn render_prompt_list(frame: &mut Frame, area: Rect, state: &AppState, confi
         .block(
             Block::default()
                 .title(title)
+                .title_style(title_style)
                 .borders(Borders::ALL)
                 .border_style(border_style),
         )

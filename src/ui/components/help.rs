@@ -10,8 +10,8 @@ use ratatui::{
 
 use crate::models::Mode;
 
-/// Render the help overlay
-pub fn render_help_overlay(frame: &mut Frame, area: Rect, current_mode: Mode) {
+/// Render the help overlay with scroll support
+pub fn render_help_overlay(frame: &mut Frame, area: Rect, current_mode: Mode, scroll_offset: usize) {
     // Create a centered popup area
     let popup_area = centered_rect(70, 80, area);
     
@@ -19,19 +19,41 @@ pub fn render_help_overlay(frame: &mut Frame, area: Rect, current_mode: Mode) {
     frame.render_widget(Clear, popup_area);
     
     let help_content = get_help_content(current_mode);
+    let total_lines = help_content.len();
+    
+    // Calculate visible height (account for borders and title)
+    let visible_height = popup_area.height.saturating_sub(2) as usize;
+    
+    // Add scroll indicator to title
+    let scroll_indicator = if total_lines > visible_height {
+        let current_pos = scroll_offset + 1;
+        let max_pos = total_lines.saturating_sub(visible_height) + 1;
+        format!(" [{}/{}]", current_pos.min(max_pos), max_pos)
+    } else {
+        String::new()
+    };
+    
+    let title = format!(" Help (j/k to scroll, ? or Esc to close){} ", scroll_indicator);
     
     let paragraph = Paragraph::new(help_content)
         .block(
             Block::default()
-                .title(" Help (press ? or Esc to close) ")
+                .title(title)
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Cyan)),
         )
         .wrap(Wrap { trim: false })
-        .style(Style::default().fg(Color::White));
+        .style(Style::default().fg(Color::White))
+        .scroll((scroll_offset as u16, 0));
     
     frame.render_widget(paragraph, popup_area);
+}
+
+/// Get the maximum scroll offset for help content
+pub fn get_help_max_scroll(mode: Mode, visible_height: usize) -> usize {
+    let content = get_help_content(mode);
+    content.len().saturating_sub(visible_height)
 }
 
 /// Create a centered rectangle

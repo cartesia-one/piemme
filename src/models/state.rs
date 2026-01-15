@@ -41,6 +41,8 @@ pub struct AppState {
     pub editor_content: Option<String>,
     /// Editor scroll offset (for long content)
     pub editor_scroll_offset: usize,
+    /// Help overlay scroll offset
+    pub help_scroll_offset: usize,
 }
 
 impl AppState {
@@ -65,6 +67,7 @@ impl AppState {
             confirm_dialog: None,
             editor_content: None,
             editor_scroll_offset: 0,
+            help_scroll_offset: 0,
         }
     }
 

@@ -132,7 +132,7 @@
 ### 5.2 Command Highlighting
 - [x] Parse content for `{{...}}` patterns
 - [x] Apply yellow/orange color for commands
-- [ ] Add visual warning indicator
+- [x] Add visual warning indicator
 
 ### 5.3 Integration
 - [x] Apply highlighting in editor view
@@ -269,7 +269,7 @@
 - [x] Implement `A` - open archive
 - [x] Switch to Archive mode
 - [x] Display archived prompts
-- [ ] Different UI styling (indicate archive view)
+- [x] Different UI styling (indicate archive view)
 
 ### 10.3 Archive Operations
 - [x] Implement `u` - unarchive prompt
@@ -392,7 +392,7 @@
 - [x] Show mode-specific bindings
 
 ### 15.2 Help Navigation
-- [ ] Scrollable help content
+- [x] Scrollable help content
 - [x] Close with `Esc` or `?`
 - [x] Quick reference section
 
@@ -428,7 +428,7 @@
 - [x] Display user-friendly error messages
 
 ### 17.2 Edge Cases
-- [ ] Empty prompt list
+- [x] Empty prompt list
 - [ ] Very long prompt names
 - [ ] Very large prompt content
 - [ ] Special characters in names

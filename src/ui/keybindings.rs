@@ -11,6 +11,11 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_confirm_dialog(key);
     }
 
+    // If help is open, handle help-specific keybindings
+    if state.show_help {
+        return handle_help_keys(key);
+    }
+
     // Global keybindings (work in all modes)
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -29,6 +34,16 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         Mode::Archive => handle_archive_mode(key),
         Mode::Folder => handle_folder_mode(key, state),
         Mode::Preview => handle_preview_mode(key),
+    }
+}
+
+/// Handle keys when help overlay is open
+fn handle_help_keys(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('q') => Action::OpenHelp, // Toggle off
+        KeyCode::Char('j') | KeyCode::Down => Action::HelpScrollDown,
+        KeyCode::Char('k') | KeyCode::Up => Action::HelpScrollUp,
+        _ => Action::None,
     }
 }
 

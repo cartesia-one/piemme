@@ -253,6 +253,17 @@ impl<'a> App<'a> {
             }
             Action::OpenHelp => {
                 self.state.show_help = !self.state.show_help;
+                // Reset scroll when opening help
+                if self.state.show_help {
+                    self.state.help_scroll_offset = 0;
+                }
+            }
+            Action::HelpScrollUp => {
+                self.state.help_scroll_offset = self.state.help_scroll_offset.saturating_sub(1);
+            }
+            Action::HelpScrollDown => {
+                // Allow scrolling down, will be capped by max scroll during render
+                self.state.help_scroll_offset = self.state.help_scroll_offset.saturating_add(1);
             }
             Action::CloseOverlay => {
                 self.state.show_help = false;

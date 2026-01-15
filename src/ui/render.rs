@@ -60,7 +60,7 @@ pub fn render(
 
     // Render help overlay if active
     if state.show_help {
-        render_help_overlay(frame, size, state.mode);
+        render_help_overlay(frame, size, state.mode, state.help_scroll_offset);
     }
 
     // Render confirmation dialog if active
@@ -195,6 +195,11 @@ fn highlight_line<'a>(line: &'a str, existing_prompts: &[&str]) -> Line<'a> {
             if let Some(end) = find_closing_braces(line, current_pos + 2) {
                 let full_cmd = &line[current_pos..end + 2];
                 
+                // Add warning indicator before commands
+                spans.push(Span::styled(
+                    "⚠ ",
+                    Style::default().fg(Color::LightRed),
+                ));
                 spans.push(Span::styled(
                     full_cmd.to_string(),
                     Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
