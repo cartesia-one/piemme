@@ -3,8 +3,8 @@
 ## Phase 1: Project Setup & Foundation
 
 ### 1.1 Project Initialization
-- [ ] Initialize Rust project with `cargo init`
-- [ ] Set up Cargo.toml with dependencies:
+- [x] Initialize Rust project with `cargo init`
+- [x] Set up Cargo.toml with dependencies:
   - `ratatui` (TUI framework)
   - `crossterm` (terminal backend)
   - `tui-textarea` (editor component)
@@ -18,75 +18,75 @@
   - `directories` (platform paths)
   - `anyhow` (error handling)
   - `thiserror` (custom errors)
-- [ ] Set up project structure (src/main.rs, modules)
-- [ ] Configure rustfmt.toml and clippy
+- [x] Set up project structure (src/main.rs, modules)
+- [x] Configure rustfmt.toml and clippy
 
 ### 1.2 Core Data Structures
-- [ ] Define `Prompt` struct (id, name, content, tags, timestamps)
-- [ ] Define `Config` struct (safe_mode, tag_colors, settings)
-- [ ] Define `AppState` struct (mode, selected_index, prompts, etc.)
-- [ ] Define `Mode` enum (Normal, Insert, Archive, Folder, Preview)
-- [ ] Define `Action` enum for all possible user actions
-- [ ] Implement serialization/deserialization for all structs
+- [x] Define `Prompt` struct (id, name, content, tags, timestamps)
+- [x] Define `Config` struct (safe_mode, tag_colors, settings)
+- [x] Define `AppState` struct (mode, selected_index, prompts, etc.)
+- [x] Define `Mode` enum (Normal, Insert, Archive, Folder, Preview)
+- [x] Define `Action` enum for all possible user actions
+- [x] Implement serialization/deserialization for all structs
 
 ---
 
 ## Phase 2: File System Layer
 
 ### 2.1 Directory Management
-- [ ] Implement `.piemme/` directory initialization
-- [ ] Create subdirectories (prompts/, archive/, folders/)
-- [ ] Implement directory existence checks
-- [ ] Handle first-run setup
+- [x] Implement `.piemme/` directory initialization
+- [x] Create subdirectories (prompts/, archive/, folders/)
+- [x] Implement directory existence checks
+- [x] Handle first-run setup
 
 ### 2.2 Config Management
-- [ ] Load config from `config.yaml`
-- [ ] Create default config if not exists
-- [ ] Implement config save
+- [x] Load config from `config.yaml`
+- [x] Create default config if not exists
+- [x] Implement config save
 - [ ] Validate config values
 
 ### 2.3 Prompt File Operations
-- [ ] Implement YAML frontmatter parsing
-- [ ] Implement YAML frontmatter writing
-- [ ] Load single prompt from file
-- [ ] Save single prompt to file
-- [ ] Load all prompts from directory
-- [ ] Handle file read/write errors gracefully
+- [x] Implement YAML frontmatter parsing
+- [x] Implement YAML frontmatter writing
+- [x] Load single prompt from file
+- [x] Save single prompt to file
+- [x] Load all prompts from directory
+- [x] Handle file read/write errors gracefully
 
 ### 2.4 Prompt Name Generation
-- [ ] Implement auto-name generation from content
-- [ ] Implement uniqueness checking across all prompts
-- [ ] Implement suffix appending for duplicates
-- [ ] Handle empty content case (`empty_prompt_<n>`)
+- [x] Implement auto-name generation from content
+- [x] Implement uniqueness checking across all prompts
+- [x] Implement suffix appending for duplicates
+- [x] Handle empty content case (`empty_prompt_<n>`)
 
 ### 2.5 Index Management
-- [ ] Design index structure (`.index.json`)
-- [ ] Build index from prompts
-- [ ] Save index to file
-- [ ] Load index on startup
-- [ ] Update index on prompt changes
+- [x] Design index structure (`.index.json`)
+- [x] Build index from prompts
+- [x] Save index to file
+- [x] Load index on startup
+- [x] Update index on prompt changes
 
 ---
 
 ## Phase 3: TUI Framework Setup
 
 ### 3.1 Application Scaffolding
-- [ ] Set up main event loop
-- [ ] Initialize crossterm terminal
-- [ ] Set up panic handler (restore terminal on crash)
-- [ ] Implement clean shutdown
+- [x] Set up main event loop
+- [x] Initialize crossterm terminal
+- [x] Set up panic handler (restore terminal on crash)
+- [x] Implement clean shutdown
 
 ### 3.2 Basic Layout
-- [ ] Create main layout (title, left panel, right panel, status bar)
-- [ ] Implement responsive sizing
-- [ ] Add borders and styling
+- [x] Create main layout (title, left panel, right panel, status bar)
+- [x] Implement responsive sizing
+- [x] Add borders and styling
 
 ### 3.3 Component Architecture
-- [ ] Create `TitleBar` component
-- [ ] Create `PromptList` component
+- [x] Create `TitleBar` component
+- [x] Create `PromptList` component
 - [ ] Create `Editor` component (wrapper around tui-textarea)
-- [ ] Create `StatusBar` component
-- [ ] Create `HelpOverlay` component
+- [x] Create `StatusBar` component
+- [x] Create `HelpOverlay` component
 - [ ] Create `Popup` component (for selectors)
 
 ---
@@ -94,48 +94,48 @@
 ## Phase 4: Core Navigation & Display
 
 ### 4.1 Prompt List
-- [ ] Display list of prompts
+- [x] Display list of prompts
 - [ ] Implement scrolling
-- [ ] Highlight selected prompt
-- [ ] Show tag color indicators
-- [ ] Display prompt count in header
+- [x] Highlight selected prompt
+- [x] Show tag color indicators
+- [x] Display prompt count in header
 
 ### 4.2 Navigation
-- [ ] Implement `j`/`↓` - move down
-- [ ] Implement `k`/`↑` - move up
-- [ ] Implement `g` - go to first
-- [ ] Implement `G` - go to last
-- [ ] Handle empty list edge case
+- [x] Implement `j`/`↓` - move down
+- [x] Implement `k`/`↑` - move up
+- [x] Implement `g` - go to first
+- [x] Implement `G` - go to last
+- [x] Handle empty list edge case
 
 ### 4.3 Editor Display
-- [ ] Display selected prompt content
-- [ ] Show prompt name as header
-- [ ] Implement read-only view for Normal mode
+- [x] Display selected prompt content
+- [x] Show prompt name as header
+- [x] Implement read-only view for Normal mode
 - [ ] Handle long content with scrolling
 
 ### 4.4 Status Bar
-- [ ] Display current mode
-- [ ] Display selected prompt tags
-- [ ] Display statistics (prompt count, archived, tags)
-- [ ] Display safe mode indicator
+- [x] Display current mode
+- [x] Display selected prompt tags
+- [x] Display statistics (prompt count, archived, tags)
+- [x] Display safe mode indicator
 
 ---
 
 ## Phase 5: Syntax Highlighting
 
 ### 5.1 Reference Highlighting
-- [ ] Parse content for `[[...]]` patterns
+- [x] Parse content for `[[...]]` patterns
 - [ ] Validate references against existing prompts
-- [ ] Apply green color for valid references
-- [ ] Apply red color for invalid references
+- [x] Apply green color for valid references
+- [x] Apply red color for invalid references
 
 ### 5.2 Command Highlighting
-- [ ] Parse content for `{{...}}` patterns
-- [ ] Apply yellow/orange color for commands
+- [x] Parse content for `{{...}}` patterns
+- [x] Apply yellow/orange color for commands
 - [ ] Add visual warning indicator
 
 ### 5.3 Integration
-- [ ] Apply highlighting in editor view
+- [x] Apply highlighting in editor view
 - [ ] Apply highlighting in preview mode
 - [ ] Update highlighting on content change
 
@@ -144,9 +144,9 @@
 ## Phase 6: Insert Mode & Editing
 
 ### 6.1 Mode Switching
-- [ ] Implement `Enter`/`i` to enter Insert mode
-- [ ] Implement `Esc` to exit Insert mode
-- [ ] Visual mode indicator update
+- [x] Implement `Enter`/`i` to enter Insert mode
+- [x] Implement `Esc` to exit Insert mode
+- [x] Visual mode indicator update
 
 ### 6.2 Text Editor Integration
 - [ ] Configure tui-textarea
@@ -163,36 +163,36 @@
 - [ ] Implement copy/cut/paste within editor
 
 ### 6.4 Auto-Save
-- [ ] Save on exit from Insert mode
-- [ ] Implement explicit save (`Ctrl+s`)
-- [ ] Update modified timestamp
-- [ ] Update index after save
+- [x] Save on exit from Insert mode
+- [x] Implement explicit save (`Ctrl+s`)
+- [x] Update modified timestamp
+- [x] Update index after save
 
 ---
 
 ## Phase 7: Prompt Management
 
 ### 7.1 Create Prompt
-- [ ] Implement `n` - new prompt
-- [ ] Create file with default content
-- [ ] Generate unique name
-- [ ] Add to prompt list
-- [ ] Select new prompt
-- [ ] Enter Insert mode automatically
+- [x] Implement `n` - new prompt
+- [x] Create file with default content
+- [x] Generate unique name
+- [x] Add to prompt list
+- [x] Select new prompt
+- [x] Enter Insert mode automatically
 
 ### 7.2 Rename Prompt
 - [ ] Implement `r` - rename prompt
 - [ ] Show rename input popup
 - [ ] Validate new name (unique, valid chars)
-- [ ] Rename file on filesystem
+- [x] Rename file on filesystem
 - [ ] Update all references to old name (optional/future)
 
 ### 7.3 Delete Prompt
-- [ ] Implement `d` - delete prompt
+- [x] Implement `d` - delete prompt
 - [ ] Show confirmation dialog
-- [ ] Delete file from filesystem
-- [ ] Remove from prompt list
-- [ ] Update index
+- [x] Delete file from filesystem
+- [x] Remove from prompt list
+- [x] Update index
 
 ### 7.4 Duplicate Prompt
 - [ ] Implement `Ctrl+d` - duplicate
@@ -205,79 +205,79 @@
 ## Phase 8: Clipboard & Prompt Engine
 
 ### 8.1 Basic Copy
-- [ ] Implement `y` - copy to clipboard
-- [ ] Copy raw content (no resolution)
-- [ ] Show success notification
+- [x] Implement `y` - copy to clipboard
+- [x] Copy raw content (no resolution)
+- [x] Show success notification
 
 ### 8.2 Reference Resolution
-- [ ] Parse all `[[...]]` references
-- [ ] Recursively resolve references
-- [ ] Implement circular reference detection
-- [ ] Implement max depth limit (10)
-- [ ] Insert warning comment for circular refs
+- [x] Parse all `[[...]]` references
+- [x] Recursively resolve references
+- [x] Implement circular reference detection
+- [x] Implement max depth limit (10)
+- [x] Insert warning comment for circular refs
 
 ### 8.3 Command Execution
-- [ ] Parse all `{{...}}` commands
-- [ ] Execute commands via shell
-- [ ] Capture command output
-- [ ] Handle command errors
-- [ ] Insert output or error message
+- [x] Parse all `{{...}}` commands
+- [x] Execute commands via shell
+- [x] Capture command output
+- [x] Handle command errors
+- [x] Insert output or error message
 
 ### 8.4 Safe Mode
-- [ ] Implement `!` - toggle safe mode
-- [ ] Show safe mode status in UI
-- [ ] Store safe mode in config
+- [x] Implement `!` - toggle safe mode
+- [x] Show safe mode status in UI
+- [x] Store safe mode in config
 
 ### 8.5 Command Confirmation
-- [ ] Detect commands in content
+- [x] Detect commands in content
 - [ ] Show confirmation dialog when safe mode ON
 - [ ] List all commands to be executed
 - [ ] Execute on confirm, cancel on reject
 - [ ] Skip confirmation when safe mode OFF
 
 ### 8.6 Copy with Resolution
-- [ ] Combine reference resolution and command execution
-- [ ] Produce final rendered content
-- [ ] Copy to clipboard
+- [x] Combine reference resolution and command execution
+- [x] Produce final rendered content
+- [x] Copy to clipboard
 
 ---
 
 ## Phase 9: Preview Mode
 
 ### 9.1 Preview Display
-- [ ] Implement `p` - toggle preview mode
+- [x] Implement `p` - toggle preview mode
 - [ ] Show rendered content (references resolved)
 - [ ] Execute commands for preview
 - [ ] Display in read-only editor view
 
 ### 9.2 Preview UI
 - [ ] Different styling for preview mode
-- [ ] Mode indicator: `[PREVIEW]`
-- [ ] `Esc` or `p` to exit preview
+- [x] Mode indicator: `[PREVIEW]`
+- [x] `Esc` or `p` to exit preview
 
 ---
 
 ## Phase 10: Archive System
 
 ### 10.1 Archive Prompt
-- [ ] Implement `a` - archive prompt
-- [ ] Move file to archive/ directory
-- [ ] Remove from main list
-- [ ] Update index
+- [x] Implement `a` - archive prompt
+- [x] Move file to archive/ directory
+- [x] Remove from main list
+- [x] Update index
 
 ### 10.2 Archive View
-- [ ] Implement `A` - open archive
-- [ ] Switch to Archive mode
-- [ ] Display archived prompts
+- [x] Implement `A` - open archive
+- [x] Switch to Archive mode
+- [x] Display archived prompts
 - [ ] Different UI styling (indicate archive view)
 
 ### 10.3 Archive Operations
-- [ ] Implement `u` - unarchive prompt
-- [ ] Move file back to prompts/
-- [ ] Add to main list
-- [ ] Implement `Delete` - permanent delete
+- [x] Implement `u` - unarchive prompt
+- [x] Move file back to prompts/
+- [x] Add to main list
+- [x] Implement `Delete` - permanent delete
 - [ ] Show confirmation for delete
-- [ ] Implement `Esc` - exit archive view
+- [x] Implement `Esc` - exit archive view
 
 ---
 
@@ -287,24 +287,24 @@
 - [ ] Implement `O` - open folder selector
 - [ ] Display folder list
 - [ ] Navigate into selected folder
-- [ ] Display folder path in title bar
+- [x] Display folder path in title bar
 
 ### 11.2 Folder Mode
 - [ ] Switch to Folder mode when in subfolder
 - [ ] Show only prompts in current folder
-- [ ] Implement `Esc` - go back to parent/root
-- [ ] All normal operations available
+- [x] Implement `Esc` - go back to parent/root
+- [x] All normal operations available
 
 ### 11.3 Move to Folder
 - [ ] Implement `M` - move prompt to folder
 - [ ] Show folder selector
 - [ ] Option to create new folder (`Ctrl+n`)
-- [ ] Move file to selected folder
+- [x] Move file to selected folder
 - [ ] Update prompt list
 
 ### 11.4 Folder Management
-- [ ] Create new folder
-- [ ] List existing folders
+- [x] Create new folder
+- [x] List existing folders
 - [ ] Handle nested folders (optional/future)
 
 ---
@@ -323,16 +323,16 @@
 - [ ] Save changes to file
 
 ### 12.3 Tag Colors
-- [ ] Load tag colors from config
-- [ ] Assign default colors to new tags
-- [ ] Display colored indicators in prompt list
+- [x] Load tag colors from config
+- [x] Assign default colors to new tags
+- [x] Display colored indicators in prompt list
 
 ### 12.4 Tag Filtering
-- [ ] Implement `[` - previous tag filter
-- [ ] Implement `]` - next tag filter
+- [x] Implement `[` - previous tag filter
+- [x] Implement `]` - next tag filter
 - [ ] Filter prompt list by selected tag
 - [ ] "All" option to show all prompts
-- [ ] Display active filter in status bar
+- [x] Display active filter in status bar
 
 ---
 
@@ -340,7 +340,7 @@
 
 ### 13.1 Search Infrastructure
 - [ ] Integrate nucleo fuzzy matcher
-- [ ] Build searchable index (names + content)
+- [x] Build searchable index (names + content)
 - [ ] Implement search ranking
 
 ### 13.2 Search UI
@@ -370,8 +370,8 @@
 - [ ] Display export options
 
 ### 14.2 Export Options
-- [ ] Copy Rendered - clipboard with resolution
-- [ ] Copy Raw - clipboard without resolution
+- [x] Copy Rendered - clipboard with resolution
+- [x] Copy Raw - clipboard without resolution
 - [ ] Save to File (Rendered)
 - [ ] Save to File (Raw)
 
@@ -379,22 +379,22 @@
 - [ ] Prompt for filename
 - [ ] Prompt for location (or use default)
 - [ ] Write content to file
-- [ ] Show success/error notification
+- [x] Show success/error notification
 
 ---
 
 ## Phase 15: Help System
 
 ### 15.1 Help Overlay
-- [ ] Implement `?` - open help
-- [ ] Design help layout
-- [ ] List all keybindings by category
-- [ ] Show mode-specific bindings
+- [x] Implement `?` - open help
+- [x] Design help layout
+- [x] List all keybindings by category
+- [x] Show mode-specific bindings
 
 ### 15.2 Help Navigation
 - [ ] Scrollable help content
-- [ ] Close with `Esc` or `?`
-- [ ] Quick reference section
+- [x] Close with `Esc` or `?`
+- [x] Quick reference section
 
 ---
 
@@ -412,20 +412,20 @@
 - [ ] Custom message support
 
 ### 16.3 Notification System
-- [ ] Implement notification display
+- [x] Implement notification display
 - [ ] Auto-dismiss after timeout
-- [ ] Support success/error/warning types
+- [x] Support success/error/warning types
 
 ---
 
 ## Phase 17: Error Handling & Edge Cases
 
 ### 17.1 Error Handling
-- [ ] Handle file not found
+- [x] Handle file not found
 - [ ] Handle permission denied
-- [ ] Handle corrupted YAML frontmatter
+- [x] Handle corrupted YAML frontmatter
 - [ ] Handle disk full
-- [ ] Display user-friendly error messages
+- [x] Display user-friendly error messages
 
 ### 17.2 Edge Cases
 - [ ] Empty prompt list

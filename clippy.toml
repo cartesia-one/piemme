@@ -1,0 +1,24 @@
+# Clippy configuration
+# See: https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Deny these lints (errors)
+warn-on-all-deny = true
+
+[lints.clippy]
+# Correctness
+correctness = "deny"
+
+# Suspicious code
+suspicious = "warn"
+
+# Style improvements
+style = "warn"
+
+# Complexity
+complexity = "warn"
+
+# Performance
+perf = "warn"
+
+# Pedantic (more strict, enable selectively)
+# pedantic = "warn"

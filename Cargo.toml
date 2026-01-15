@@ -1,0 +1,62 @@
+[package]
+name = "piemme"
+version = "0.1.0"
+edition = "2024"
+authors = ["Federico"]
+description = "A terminal-based user interface (TUI) application for managing, organizing, and composing reusable prompts"
+license = "MIT"
+repository = ""
+keywords = ["tui", "prompt", "manager", "cli", "terminal"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# TUI Framework
+ratatui = "0.29"
+crossterm = "0.28"
+tui-textarea = "0.7"
+
+# Clipboard
+arboard = "3.4"
+
+# Fuzzy Search
+nucleo = "0.5"
+
+# Markdown
+pulldown-cmark = "0.12"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0"
+
+# File Watching
+notify = "7.0"
+
+# UUID
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# Timestamps
+chrono = { version = "0.4", features = ["serde"] }
+
+# Platform paths
+directories = "5.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Tokio for async (needed for file watching)
+tokio = { version = "1.42", features = ["full"] }
+
+# Regex for pattern matching
+regex = "1.11"
+
+# Dev dependencies for testing
+[dev-dependencies]
+tempfile = "3.15"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
