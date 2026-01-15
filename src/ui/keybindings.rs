@@ -36,10 +36,13 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_help_keys(key);
     }
 
-    // Global keybindings (work in all modes)
+    // Global keybindings (work in all modes except Insert for some keys)
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            return Action::Quit;
+            // In Insert mode, Ctrl+C is for copying, not quitting
+            if state.mode != Mode::Insert {
+                return Action::Quit;
+            }
         }
         KeyCode::Char('?') => {
             return Action::OpenHelp;

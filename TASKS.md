@@ -160,14 +160,14 @@
 ### 6.3 Edit Operations
 - [x] Implement undo (`Ctrl+z`)
 - [x] Implement redo (`Ctrl+y`)
-- [x] Implement text selection (mouse drag and `Ctrl+a`)
+- [x] Implement text selection (`Ctrl+a` for select all, `Shift+Arrow` for keyboard selection)
 - [x] Implement copy/cut/paste within editor (`Ctrl+c`/`Ctrl+v`)
 
 ### 6.4 Mouse Support
 - [x] Enable mouse capture in terminal
-- [x] Handle mouse events for text selection
-- [x] Mouse click to position cursor
-- [x] Mouse drag to select text
+- [x] Handle mouse scroll events in editor
+- [ ] Mouse click to position cursor (not supported by tui-textarea)
+- [ ] Mouse drag to select text (not supported by tui-textarea)
 
 ### 6.5 Auto-Save
 - [x] Save on exit from Insert mode

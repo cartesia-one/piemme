@@ -164,16 +164,18 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 
 ## Mouse Support
 
-Mouse interaction is supported in Insert mode for text selection:
+Mouse support is limited in the editor due to terminal constraints:
 
-- **Click**: Position cursor at click location
-- **Click and Drag**: Select text from start to end of drag
-- **Double-click**: Select word (handled by terminal)
-- **Triple-click**: Select line (handled by terminal)
+- **Mouse Scroll**: Scroll the editor content up/down with scroll wheel
 
-Mouse selection works seamlessly with keyboard shortcuts:
-- After selecting text with mouse, use `Ctrl+c` to copy
-- Use `Ctrl+v` to paste at cursor position
+Note: Mouse click/drag text selection is not supported by the underlying editor library.
+Use keyboard shortcuts for text selection instead:
+- `Shift+Arrow keys`: Select text character by character
+- `Shift+Ctrl+Arrow keys`: Select text word by word  
+- `Shift+Home/End`: Select to beginning/end of line
+- `Ctrl+a`: Select all text
+
+After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 
 ---
 
@@ -259,11 +261,14 @@ Mouse selection works seamlessly with keyboard shortcuts:
 | `Ctrl+l` | Quick insert reference (fuzzy search prompts) |
 | `Ctrl+←` | Move cursor word left |
 | `Ctrl+→` | Move cursor word right |
+| `Shift+Arrow` | Select text |
+| `Shift+Ctrl+Arrow` | Select text by word |
 | `Home` | Move to line start |
 | `End` | Move to line end |
+| `Shift+Home` | Select to line start |
+| `Shift+End` | Select to line end |
 | `Ctrl+Home` | Move to document start |
 | `Ctrl+End` | Move to document end |
-| Mouse drag | Select text with mouse |
 
 ### Archive Mode
 
