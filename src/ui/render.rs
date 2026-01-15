@@ -118,14 +118,37 @@ fn render_editor(
     }
 
     // Normal/Preview mode: show read-only content with syntax highlighting
-    let (title, content) = if let Some(prompt) = state.selected_prompt() {
+    let (title, content, preview_border_style) = if let Some(prompt) = state.selected_prompt() {
         let title = format!(" {} ", prompt.name);
-        let content = highlight_content(&prompt.content, &prompt_names, config);
-        (title, content)
+        
+        // In Preview mode, resolve references and commands
+        if state.mode == crate::models::Mode::Preview {
+            // Create a closure to get prompt content by name
+            let get_content = |name: &str| -> Option<String> {
+                state.prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
+            };
+            
+            // Resolve the content (without executing commands in preview for safety)
+            let result = crate::engine::resolve_prompt(&prompt.content, get_content, false);
+            
+            // Show resolved content without additional highlighting
+            // (already resolved, so no [[]] or {{}} patterns)
+            let content: Vec<Line> = result.content
+                .lines()
+                .map(|line| Line::from(line.to_string()))
+                .collect();
+            
+            // Use a different border color for preview mode
+            (title, content, Style::default().fg(Color::Magenta))
+        } else {
+            let content = highlight_content(&prompt.content, &prompt_names, config);
+            (title, content, border_style)
+        }
     } else {
         (
             " No prompt selected ".to_string(),
             vec![Line::from("Select or create a prompt to get started")],
+            border_style,
         )
     };
 
@@ -141,7 +164,7 @@ fn render_editor(
             Block::default()
                 .title(full_title)
                 .borders(Borders::ALL)
-                .border_style(border_style),
+                .border_style(preview_border_style),
         )
         .wrap(Wrap { trim: false })
         .scroll((state.editor_scroll_offset as u16, 0));

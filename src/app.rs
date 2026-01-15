@@ -25,6 +25,8 @@ pub struct App<'a> {
     archived_count: usize,
     /// Text editor (created lazily when entering insert mode)
     editor: Option<TextArea<'a>>,
+    /// All prompts (unfiltered) - used as source for tag filtering
+    all_prompts: Vec<Prompt>,
 }
 
 impl<'a> App<'a> {
@@ -48,6 +50,7 @@ impl<'a> App<'a> {
 
         // Load prompts
         let prompts = load_all_prompts(&prompts_dir()?)?;
+        let all_prompts = prompts.clone();
         state.prompts = prompts;
 
         // Count archived prompts
@@ -70,6 +73,7 @@ impl<'a> App<'a> {
             index,
             archived_count,
             editor: None,
+            all_prompts,
         })
     }
 
@@ -377,7 +381,8 @@ impl<'a> App<'a> {
         self.index.upsert(entry);
         self.index.save(&index_path()?)?;
 
-        // Add to list and select
+        // Add to both lists
+        self.all_prompts.push(prompt.clone());
         self.state.prompts.push(prompt);
         self.state.selected_index = self.state.prompts.len() - 1;
 
@@ -397,8 +402,14 @@ impl<'a> App<'a> {
         if let Some(ref editor) = self.editor {
             let new_content = editor.lines().join("\n");
             if let Some(prompt) = self.state.selected_prompt_mut() {
-                prompt.content = new_content;
+                prompt.content = new_content.clone();
                 prompt.modified = chrono::Utc::now();
+                
+                // Also update in all_prompts
+                if let Some(all_prompt) = self.all_prompts.iter_mut().find(|p| p.id == prompt.id) {
+                    all_prompt.content = new_content;
+                    all_prompt.modified = prompt.modified;
+                }
             }
         }
 
@@ -441,8 +452,8 @@ impl<'a> App<'a> {
                 return Ok(());
             }
 
-            // Get all existing names except current prompt
-            let existing_names: Vec<&str> = self.state.prompts
+            // Get all existing names except current prompt (use all_prompts for uniqueness)
+            let existing_names: Vec<&str> = self.all_prompts
                 .iter()
                 .filter(|p| p.name != old_name)
                 .map(|p| p.name.as_str())
@@ -467,6 +478,11 @@ impl<'a> App<'a> {
                 self.index.upsert(entry);
             }
             
+            // Also update in all_prompts
+            if let Some(prompt) = self.all_prompts.iter_mut().find(|p| p.name == old_name) {
+                prompt.name = new_name.clone();
+            }
+            
             self.index.save(&index_path()?)?;
 
             self.state.notify(format!("Renamed '{}' to '{}'", old_name, new_name), NotificationLevel::Success);
@@ -486,8 +502,8 @@ impl<'a> App<'a> {
             let content = prompt.content.clone();
             let tags = prompt.tags.clone();
 
-            // Get all existing names for uniqueness check
-            let existing_names: Vec<&str> = self.state.prompts
+            // Get all existing names for uniqueness check (from all_prompts to be safe)
+            let existing_names: Vec<&str> = self.all_prompts
                 .iter()
                 .map(|p| p.name.as_str())
                 .collect();
@@ -508,7 +524,8 @@ impl<'a> App<'a> {
             self.index.upsert(entry);
             self.index.save(&index_path()?)?;
 
-            // Add to list and select
+            // Add to both lists
+            self.all_prompts.push(new_prompt.clone());
             self.state.prompts.push(new_prompt.clone());
             self.state.selected_index = self.state.prompts.len() - 1;
 
@@ -579,7 +596,7 @@ impl<'a> App<'a> {
         self.index.remove(name);
         self.index.save(&index_path()?)?;
 
-        // Remove from list
+        // Remove from the filtered list
         if let Some(pos) = self.state.prompts.iter().position(|p| p.name == name) {
             self.state.prompts.remove(pos);
             
@@ -587,6 +604,11 @@ impl<'a> App<'a> {
             if self.state.selected_index >= self.state.prompts.len() && self.state.selected_index > 0 {
                 self.state.selected_index -= 1;
             }
+        }
+
+        // Also remove from all_prompts
+        if let Some(pos) = self.all_prompts.iter().position(|p| p.name == name) {
+            self.all_prompts.remove(pos);
         }
 
         if self.state.mode == Mode::Archive {
@@ -655,6 +677,11 @@ impl<'a> App<'a> {
             // Remove from current list
             self.state.prompts.remove(self.state.selected_index);
 
+            // Also remove from all_prompts
+            if let Some(pos) = self.all_prompts.iter().position(|p| p.name == name) {
+                self.all_prompts.remove(pos);
+            }
+
             // Adjust selection
             if self.state.selected_index >= self.state.prompts.len() && self.state.selected_index > 0 {
                 self.state.selected_index -= 1;
@@ -676,6 +703,7 @@ impl<'a> App<'a> {
 
         if let Some(prompt) = self.state.selected_prompt() {
             let name = prompt.name.clone();
+            let unarchived_prompt = prompt.clone();
 
             // Move file back to prompts
             crate::fs::move_prompt(&name, &archive_dir()?, &prompts_dir()?)?;
@@ -686,7 +714,10 @@ impl<'a> App<'a> {
             }
             self.index.save(&index_path()?)?;
 
-            // Remove from current list
+            // Add to all_prompts (will be added when returning to Normal mode via reload)
+            self.all_prompts.push(unarchived_prompt);
+
+            // Remove from current list (archive view)
             self.state.prompts.remove(self.state.selected_index);
 
             // Adjust selection
@@ -770,8 +801,10 @@ impl<'a> App<'a> {
             }
         }
 
-        // Apply filter (reload prompts)
-        // For now, just update notification
+        // Apply the filter to the prompt list
+        self.apply_tag_filter();
+
+        // Show notification
         if let Some(tag) = &self.state.tag_filter {
             self.state.notify(format!("Filtering by: {}", tag), NotificationLevel::Info);
         } else {
@@ -779,10 +812,45 @@ impl<'a> App<'a> {
         }
     }
 
+    /// Apply the current tag filter to the prompt list
+    fn apply_tag_filter(&mut self) {
+        match &self.state.tag_filter {
+            None => {
+                // Show all prompts
+                self.state.prompts = self.all_prompts.clone();
+            }
+            Some(tag) => {
+                // Filter prompts that have this tag
+                self.state.prompts = self.all_prompts
+                    .iter()
+                    .filter(|p| p.tags.contains(tag))
+                    .cloned()
+                    .collect();
+            }
+        }
+        
+        // Reset selection if it's out of bounds
+        if self.state.selected_index >= self.state.prompts.len() {
+            self.state.selected_index = self.state.prompts.len().saturating_sub(1);
+        }
+    }
+
     /// Reload prompts from disk
     fn reload_prompts(&mut self) -> Result<()> {
-        self.state.prompts = load_all_prompts(&prompts_dir()?)?;
+        let prompts = load_all_prompts(&prompts_dir()?)?;
+        self.all_prompts = prompts.clone();
+        self.state.prompts = prompts;
         self.state.current_folder = None;
+        self.state.tag_filter = None;  // Reset filter when reloading
+        
+        // Re-collect all tags
+        let mut all_tags: Vec<String> = self.all_prompts
+            .iter()
+            .flat_map(|p| p.tags.clone())
+            .collect();
+        all_tags.sort();
+        all_tags.dedup();
+        self.state.all_tags = all_tags;
         
         if self.state.selected_index >= self.state.prompts.len() {
             self.state.selected_index = self.state.prompts.len().saturating_sub(1);

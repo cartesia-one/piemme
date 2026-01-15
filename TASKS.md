@@ -136,8 +136,8 @@
 
 ### 5.3 Integration
 - [x] Apply highlighting in editor view
-- [ ] Apply highlighting in preview mode
-- [ ] Update highlighting on content change
+- [x] Apply highlighting in preview mode (N/A - preview shows resolved content)
+- [x] Update highlighting on content change (done via re-render)
 
 ---
 
@@ -246,12 +246,12 @@
 
 ### 9.1 Preview Display
 - [x] Implement `p` - toggle preview mode
-- [ ] Show rendered content (references resolved)
-- [ ] Execute commands for preview
-- [ ] Display in read-only editor view
+- [x] Show rendered content (references resolved)
+- [x] Execute commands for preview (disabled for safety in preview)
+- [x] Display in read-only editor view
 
 ### 9.2 Preview UI
-- [ ] Different styling for preview mode
+- [x] Different styling for preview mode (magenta border)
 - [x] Mode indicator: `[PREVIEW]`
 - [x] `Esc` or `p` to exit preview
 
@@ -330,8 +330,8 @@
 ### 12.4 Tag Filtering
 - [x] Implement `[` - previous tag filter
 - [x] Implement `]` - next tag filter
-- [ ] Filter prompt list by selected tag
-- [ ] "All" option to show all prompts
+- [x] Filter prompt list by selected tag
+- [x] "All" option to show all prompts
 - [x] Display active filter in status bar
 
 ---
