@@ -139,6 +139,9 @@ fn handle_insert_mode(key: KeyEvent) -> Action {
         KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Save,
         KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Undo,
         KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
+        KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
+        KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CopySelection,
+        KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Paste,
         KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::QuickInsertReference,
         // Note: CTRL+i sends Tab in terminals, so we use CTRL+r for reference popup
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,

@@ -160,10 +160,16 @@
 ### 6.3 Edit Operations
 - [x] Implement undo (`Ctrl+z`)
 - [x] Implement redo (`Ctrl+y`)
-- [ ] Implement text selection
-- [ ] Implement copy/cut/paste within editor
+- [x] Implement text selection (mouse drag and `Ctrl+a`)
+- [x] Implement copy/cut/paste within editor (`Ctrl+c`/`Ctrl+v`)
 
-### 6.4 Auto-Save
+### 6.4 Mouse Support
+- [x] Enable mouse capture in terminal
+- [x] Handle mouse events for text selection
+- [x] Mouse click to position cursor
+- [x] Mouse drag to select text
+
+### 6.5 Auto-Save
 - [x] Save on exit from Insert mode
 - [x] Implement explicit save (`Ctrl+s`)
 - [x] Update modified timestamp

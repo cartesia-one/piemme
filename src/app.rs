@@ -93,7 +93,20 @@ impl<'a> App<'a> {
 
             // Handle events
             if event::poll(Duration::from_millis(100))? {
-                if let Event::Key(key) = event::read()? {
+                let evt = event::read()?;
+                
+                // Handle mouse events for text selection in Insert mode
+                if let Event::Mouse(mouse_event) = evt {
+                    if self.state.mode == Mode::Insert {
+                        if let Some(ref mut editor) = self.editor {
+                            // Convert mouse event to Input for tui-textarea
+                            editor.input(mouse_event);
+                        }
+                    }
+                    continue;
+                }
+                
+                if let Event::Key(key) = evt {
                     // Only handle key press events (not release)
                     if key.kind == KeyEventKind::Press {
                         // Handle rename popup input
@@ -214,6 +227,47 @@ impl<'a> App<'a> {
                                     }
                                     Action::Redo => {
                                         editor.redo();
+                                    }
+                                    Action::SelectAll => {
+                                        editor.select_all();
+                                    }
+                                    Action::CopySelection => {
+                                        // Copy selected text without rendering
+                                        editor.copy(); // Copies selection to yank buffer
+                                        let selected_text = editor.yank_text();
+                                        if !selected_text.is_empty() {
+                                            match arboard::Clipboard::new() {
+                                                Ok(mut clipboard) => {
+                                                    if let Err(e) = clipboard.set_text(&selected_text) {
+                                                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                                                    } else {
+                                                        std::thread::sleep(Duration::from_millis(100));
+                                                        self.state.notify("Copied selection", NotificationLevel::Success);
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Action::Paste => {
+                                        // Paste from system clipboard
+                                        match arboard::Clipboard::new() {
+                                            Ok(mut clipboard) => {
+                                                match clipboard.get_text() {
+                                                    Ok(text) => {
+                                                        editor.insert_str(&text);
+                                                    }
+                                                    Err(e) => {
+                                                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                                                    }
+                                                }
+                                            }
+                                            Err(e) => {
+                                                self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                                            }
+                                        }
                                     }
                                     Action::OpenHelp => {
                                         self.handle_action(action)?;
@@ -525,6 +579,11 @@ impl<'a> App<'a> {
             }
             Action::ConfirmNewFolder => {
                 self.confirm_new_folder()?;
+            }
+
+            // Text selection/clipboard actions (handled in event loop for Insert mode)
+            Action::SelectAll | Action::CopySelection | Action::Paste => {
+                // These are handled directly in the event loop when in Insert mode
             }
         }
 

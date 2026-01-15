@@ -162,6 +162,21 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 
 ---
 
+## Mouse Support
+
+Mouse interaction is supported in Insert mode for text selection:
+
+- **Click**: Position cursor at click location
+- **Click and Drag**: Select text from start to end of drag
+- **Double-click**: Select word (handled by terminal)
+- **Triple-click**: Select line (handled by terminal)
+
+Mouse selection works seamlessly with keyboard shortcuts:
+- After selecting text with mouse, use `Ctrl+c` to copy
+- Use `Ctrl+v` to paste at cursor position
+
+---
+
 ## Application Modes
 
 ### 1. Normal Mode (Default)
@@ -237,6 +252,9 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 | `Ctrl+s` | Save changes (explicit) |
 | `Ctrl+z` | Undo |
 | `Ctrl+y` | Redo |
+| `Ctrl+a` | Select all text |
+| `Ctrl+c` | Copy selected text to clipboard (without rendering) |
+| `Ctrl+v` | Paste from system clipboard |
 | `Ctrl+r` | Insert reference popup (fuzzy search prompts, inserts `[[prompt_name]]`) |
 | `Ctrl+l` | Quick insert reference (fuzzy search prompts) |
 | `Ctrl+←` | Move cursor word left |
@@ -245,6 +263,7 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 | `End` | Move to line end |
 | `Ctrl+Home` | Move to document start |
 | `Ctrl+End` | Move to document end |
+| Mouse drag | Select text with mouse |
 
 ### Archive Mode
 

@@ -70,6 +70,12 @@ pub enum Action {
     Undo,
     /// Redo last undone edit
     Redo,
+    /// Select all text in editor
+    SelectAll,
+    /// Copy selected text to clipboard (without rendering)
+    CopySelection,
+    /// Paste from clipboard
+    Paste,
 
     // Export
     /// Open export dialog
