@@ -105,14 +105,30 @@ impl App {
         // Clear notification on any action
         self.state.clear_notification();
 
+        // Default visible height estimate for scrolling
+        // Will be updated during render, but we use a reasonable default here
+        const DEFAULT_VISIBLE_HEIGHT: usize = 20;
+
         match action {
             Action::None => {}
 
             // Navigation
-            Action::MoveDown => self.state.select_next(),
-            Action::MoveUp => self.state.select_previous(),
-            Action::GoToFirst => self.state.select_first(),
-            Action::GoToLast => self.state.select_last(),
+            Action::MoveDown => {
+                self.state.select_next();
+                self.state.ensure_visible(DEFAULT_VISIBLE_HEIGHT);
+            }
+            Action::MoveUp => {
+                self.state.select_previous();
+                self.state.ensure_visible(DEFAULT_VISIBLE_HEIGHT);
+            }
+            Action::GoToFirst => {
+                self.state.select_first();
+                // select_first already resets scroll offset
+            }
+            Action::GoToLast => {
+                self.state.select_last();
+                self.state.ensure_visible(DEFAULT_VISIBLE_HEIGHT);
+            }
 
             // Mode switching
             Action::EnterInsertMode => {
@@ -216,10 +232,18 @@ impl App {
                 self.save_current_prompt()?;
             }
 
+            // Rename prompt
+            Action::RenamePrompt => {
+                self.rename_current_prompt()?;
+            }
+
+            // Duplicate prompt
+            Action::DuplicatePrompt => {
+                self.duplicate_current_prompt()?;
+            }
+
             // TODO: Implement these
-            Action::RenamePrompt
-            | Action::DuplicatePrompt
-            | Action::OpenFolder
+            Action::OpenFolder
             | Action::MoveToFolder
             | Action::OpenTagSelector
             | Action::OpenSearch
@@ -277,6 +301,108 @@ impl App {
             self.index.save(&index_path()?)?;
 
             self.state.notify("Saved", NotificationLevel::Success);
+        }
+
+        Ok(())
+    }
+
+    /// Rename the current prompt
+    /// For now, this auto-renames based on content (regenerates name from first line)
+    fn rename_current_prompt(&mut self) -> Result<()> {
+        if self.state.mode != Mode::Normal {
+            return Ok(());
+        }
+
+        if let Some(prompt) = self.state.selected_prompt() {
+            let old_name = prompt.name.clone();
+            let content = prompt.content.clone();
+
+            // Generate new name from content
+            let base_name = crate::models::prompt::generate_name_from_content(&content);
+            
+            if base_name.is_empty() {
+                self.state.notify("Cannot rename: prompt has no content", NotificationLevel::Warning);
+                return Ok(());
+            }
+
+            // Check if new name would be the same
+            if base_name == old_name {
+                self.state.notify("Name unchanged", NotificationLevel::Info);
+                return Ok(());
+            }
+
+            // Get all existing names except current prompt
+            let existing_names: Vec<&str> = self.state.prompts
+                .iter()
+                .filter(|p| p.name != old_name)
+                .map(|p| p.name.as_str())
+                .collect();
+
+            // Make the name unique
+            let new_name = crate::models::prompt::make_unique_name(&base_name, &existing_names);
+
+            // Rename file on disk
+            let dir = prompts_dir()?;
+            crate::fs::rename_prompt(&old_name, &new_name, &dir)?;
+
+            // Update index
+            self.index.remove(&old_name);
+            
+            // Update the prompt in state
+            if let Some(prompt) = self.state.selected_prompt_mut() {
+                prompt.name = new_name.clone();
+                
+                // Re-add to index with new name
+                let entry = IndexEntry::from_prompt(prompt, "prompts");
+                self.index.upsert(entry);
+            }
+            
+            self.index.save(&index_path()?)?;
+
+            self.state.notify(format!("Renamed '{}' to '{}'", old_name, new_name), NotificationLevel::Success);
+        }
+
+        Ok(())
+    }
+
+    /// Duplicate the current prompt
+    fn duplicate_current_prompt(&mut self) -> Result<()> {
+        if !self.state.has_prompts() {
+            return Ok(());
+        }
+
+        if let Some(prompt) = self.state.selected_prompt() {
+            // Clone the prompt data
+            let content = prompt.content.clone();
+            let tags = prompt.tags.clone();
+
+            // Get all existing names for uniqueness check
+            let existing_names: Vec<&str> = self.state.prompts
+                .iter()
+                .map(|p| p.name.as_str())
+                .collect();
+
+            // Create new prompt with same content
+            let mut new_prompt = crate::models::Prompt::with_content(&content);
+            new_prompt.tags = tags;
+            
+            // Generate a unique name based on original
+            let base_name = crate::models::prompt::generate_name_from_content(&content);
+            new_prompt.name = crate::models::prompt::make_unique_name(&base_name, &existing_names);
+
+            // Save to disk
+            save_prompt(&new_prompt, &prompts_dir()?)?;
+
+            // Update index
+            let entry = IndexEntry::from_prompt(&new_prompt, "prompts");
+            self.index.upsert(entry);
+            self.index.save(&index_path()?)?;
+
+            // Add to list and select
+            self.state.prompts.push(new_prompt.clone());
+            self.state.selected_index = self.state.prompts.len() - 1;
+
+            self.state.notify(format!("Duplicated as '{}'", new_prompt.name), NotificationLevel::Success);
         }
 
         Ok(())

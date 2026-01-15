@@ -1,24 +1,10 @@
 # Clippy configuration
 # See: https://rust-lang.github.io/rust-clippy/master/index.html
 
-# Deny these lints (errors)
-warn-on-all-deny = true
+# Cognitive complexity threshold (default is 25)
+cognitive-complexity-threshold = 30
 
-[lints.clippy]
-# Correctness
-correctness = "deny"
-
-# Suspicious code
-suspicious = "warn"
-
-# Style improvements
-style = "warn"
-
-# Complexity
-complexity = "warn"
-
-# Performance
-perf = "warn"
-
-# Pedantic (more strict, enable selectively)
-# pedantic = "warn"
+# Allow some common patterns
+allow-expect-in-tests = true
+allow-unwrap-in-tests = true
+allow-dbg-in-tests = true

@@ -29,6 +29,27 @@ fn default_export_format() -> String {
     "rendered".to_string()
 }
 
+/// Valid export format values
+const VALID_EXPORT_FORMATS: &[&str] = &["rendered", "raw"];
+
+/// Valid color names for tags
+const VALID_COLORS: &[&str] = &[
+    "blue", "green", "yellow", "magenta", "purple", "cyan", "red", "white", "gray", "grey",
+];
+
+/// Configuration validation errors
+#[derive(Debug, Clone)]
+pub struct ConfigValidationError {
+    pub field: String,
+    pub message: String,
+}
+
+impl std::fmt::Display for ConfigValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.field, self.message)
+    }
+}
+
 impl Config {
     /// Create a new config with default values
     pub fn new() -> Self {
@@ -87,6 +108,45 @@ impl Config {
     /// Set the color for a tag
     pub fn set_tag_color(&mut self, tag: impl Into<String>, color: impl Into<String>) {
         self.tag_colors.insert(tag.into(), color.into());
+    }
+
+    /// Validate the configuration and return any errors
+    pub fn validate(&self) -> Vec<ConfigValidationError> {
+        let mut errors = Vec::new();
+
+        // Validate export format
+        if !VALID_EXPORT_FORMATS.contains(&self.default_export_format.as_str()) {
+            errors.push(ConfigValidationError {
+                field: "default_export_format".to_string(),
+                message: format!(
+                    "Invalid value '{}'. Must be one of: {}",
+                    self.default_export_format,
+                    VALID_EXPORT_FORMATS.join(", ")
+                ),
+            });
+        }
+
+        // Validate tag colors
+        for (tag, color) in &self.tag_colors {
+            let color_lower = color.to_lowercase();
+            if !VALID_COLORS.contains(&color_lower.as_str()) {
+                errors.push(ConfigValidationError {
+                    field: format!("tag_colors.{}", tag),
+                    message: format!(
+                        "Invalid color '{}'. Must be one of: {}",
+                        color,
+                        VALID_COLORS.join(", ")
+                    ),
+                });
+            }
+        }
+
+        errors
+    }
+
+    /// Check if the configuration is valid
+    pub fn is_valid(&self) -> bool {
+        self.validate().is_empty()
     }
 
     /// Get a default color based on tag name (deterministic)
@@ -180,5 +240,43 @@ mod tests {
         assert_eq!(parsed.safe_mode, config.safe_mode);
         assert_eq!(parsed.get_tag_color("coding"), "blue");
         assert_eq!(parsed.get_tag_color("writing"), "green");
+    }
+
+    #[test]
+    fn test_config_validation_valid() {
+        let config = Config::new();
+        assert!(config.is_valid());
+        assert!(config.validate().is_empty());
+    }
+
+    #[test]
+    fn test_config_validation_invalid_export_format() {
+        let mut config = Config::new();
+        config.default_export_format = "invalid".to_string();
+        
+        let errors = config.validate();
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].field.contains("default_export_format"));
+    }
+
+    #[test]
+    fn test_config_validation_invalid_tag_color() {
+        let mut config = Config::new();
+        config.set_tag_color("test", "invalid_color");
+        
+        let errors = config.validate();
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].field.contains("tag_colors.test"));
+    }
+
+    #[test]
+    fn test_config_validation_multiple_errors() {
+        let mut config = Config::new();
+        config.default_export_format = "bad".to_string();
+        config.set_tag_color("tag1", "nope");
+        config.set_tag_color("tag2", "also_bad");
+        
+        let errors = config.validate();
+        assert_eq!(errors.len(), 3);
     }
 }

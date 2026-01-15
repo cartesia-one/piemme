@@ -62,9 +62,12 @@ fn render_editor(frame: &mut Frame, area: Rect, state: &AppState, config: &Confi
         Style::default().fg(Color::DarkGray)
     };
 
+    // Collect all prompt names for reference validation
+    let prompt_names: Vec<&str> = state.prompts.iter().map(|p| p.name.as_str()).collect();
+
     let (title, content) = if let Some(prompt) = state.selected_prompt() {
         let title = format!(" {} ", prompt.name);
-        let content = highlight_content(&prompt.content, &[], config);
+        let content = highlight_content(&prompt.content, &prompt_names, config);
         (title, content)
     } else {
         (" No prompt selected ".to_string(), vec![Line::from("Select or create a prompt to get started")])

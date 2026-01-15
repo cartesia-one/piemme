@@ -31,6 +31,10 @@ pub struct AppState {
     pub active_popup: Option<PopupType>,
     /// Focus state (true = editor, false = list)
     pub editor_focused: bool,
+    /// Text input buffer for rename operations
+    pub input_buffer: String,
+    /// Scroll offset for the prompt list
+    pub list_scroll_offset: usize,
 }
 
 impl AppState {
@@ -50,6 +54,8 @@ impl AppState {
             show_help: false,
             active_popup: None,
             editor_focused: false,
+            input_buffer: String::new(),
+            list_scroll_offset: 0,
         }
     }
 
@@ -80,12 +86,31 @@ impl AppState {
     /// Go to first prompt
     pub fn select_first(&mut self) {
         self.selected_index = 0;
+        self.list_scroll_offset = 0;
     }
 
     /// Go to last prompt
     pub fn select_last(&mut self) {
         if !self.prompts.is_empty() {
             self.selected_index = self.prompts.len() - 1;
+        }
+    }
+
+    /// Update scroll offset to keep selection visible
+    /// `visible_height` is the number of items that can be displayed in the list
+    pub fn ensure_visible(&mut self, visible_height: usize) {
+        if visible_height == 0 {
+            return;
+        }
+
+        // If selection is above the visible area, scroll up
+        if self.selected_index < self.list_scroll_offset {
+            self.list_scroll_offset = self.selected_index;
+        }
+        
+        // If selection is below the visible area, scroll down
+        if self.selected_index >= self.list_scroll_offset + visible_height {
+            self.list_scroll_offset = self.selected_index - visible_height + 1;
         }
     }
 

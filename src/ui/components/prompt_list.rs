@@ -4,7 +4,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame,
 };
 
@@ -15,6 +15,31 @@ use crate::models::AppState;
 pub fn render_prompt_list(frame: &mut Frame, area: Rect, state: &AppState, config: &Config) {
     let title = format!(" Prompts ({}) ", state.prompts.len());
     
+    let border_style = if state.editor_focused {
+        Style::default().fg(Color::DarkGray)
+    } else {
+        Style::default().fg(Color::Cyan)
+    };
+
+    // Handle empty list
+    if state.prompts.is_empty() {
+        let empty_msg = Paragraph::new(vec![
+            Line::from(""),
+            Line::from("  No prompts yet"),
+            Line::from(""),
+            Line::from(Span::styled("  Press 'n' to create", Style::default().fg(Color::DarkGray))),
+        ])
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_style(border_style),
+        );
+        
+        frame.render_widget(empty_msg, area);
+        return;
+    }
+
     let items: Vec<ListItem> = state
         .prompts
         .iter()
@@ -46,12 +71,6 @@ pub fn render_prompt_list(frame: &mut Frame, area: Rect, state: &AppState, confi
         })
         .collect();
 
-    let border_style = if state.editor_focused {
-        Style::default().fg(Color::DarkGray)
-    } else {
-        Style::default().fg(Color::Cyan)
-    };
-
     let list = List::new(items)
         .block(
             Block::default()
@@ -66,6 +85,8 @@ pub fn render_prompt_list(frame: &mut Frame, area: Rect, state: &AppState, confi
 
     let mut list_state = ListState::default();
     list_state.select(Some(state.selected_index));
+    // Apply scroll offset from state
+    *list_state.offset_mut() = state.list_scroll_offset;
 
     frame.render_stateful_widget(list, area, &mut list_state);
 }

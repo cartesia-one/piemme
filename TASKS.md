@@ -43,7 +43,7 @@
 - [x] Load config from `config.yaml`
 - [x] Create default config if not exists
 - [x] Implement config save
-- [ ] Validate config values
+- [x] Validate config values
 
 ### 2.3 Prompt File Operations
 - [x] Implement YAML frontmatter parsing
@@ -95,7 +95,7 @@
 
 ### 4.1 Prompt List
 - [x] Display list of prompts
-- [ ] Implement scrolling
+- [x] Implement scrolling
 - [x] Highlight selected prompt
 - [x] Show tag color indicators
 - [x] Display prompt count in header
@@ -125,7 +125,7 @@
 
 ### 5.1 Reference Highlighting
 - [x] Parse content for `[[...]]` patterns
-- [ ] Validate references against existing prompts
+- [x] Validate references against existing prompts
 - [x] Apply green color for valid references
 - [x] Apply red color for invalid references
 
@@ -181,9 +181,9 @@
 - [x] Enter Insert mode automatically
 
 ### 7.2 Rename Prompt
-- [ ] Implement `r` - rename prompt
+- [x] Implement `r` - rename prompt (auto-rename from content)
 - [ ] Show rename input popup
-- [ ] Validate new name (unique, valid chars)
+- [x] Validate new name (unique, valid chars)
 - [x] Rename file on filesystem
 - [ ] Update all references to old name (optional/future)
 
@@ -195,10 +195,10 @@
 - [x] Update index
 
 ### 7.4 Duplicate Prompt
-- [ ] Implement `Ctrl+d` - duplicate
-- [ ] Create copy with new unique name
-- [ ] Copy content and tags
-- [ ] Select duplicated prompt
+- [x] Implement `Ctrl+d` - duplicate
+- [x] Create copy with new unique name
+- [x] Copy content and tags
+- [x] Select duplicated prompt
 
 ---
 
