@@ -121,6 +121,34 @@ pub enum Action {
     /// Move down in reference popup
     ReferencePopupDown,
 
+    // Tag selector actions
+    /// Confirm tag toggle/selection
+    ConfirmTagToggle,
+    /// Cancel tag selector
+    CancelTagSelector,
+    /// Move up in tag selector
+    TagSelectorUp,
+    /// Move down in tag selector
+    TagSelectorDown,
+    /// Create new tag in selector
+    CreateNewTag,
+    /// Confirm new tag creation
+    ConfirmNewTag,
+
+    // Folder selector actions
+    /// Confirm folder selection
+    ConfirmFolderSelection,
+    /// Cancel folder selector
+    CancelFolderSelector,
+    /// Move up in folder selector
+    FolderSelectorUp,
+    /// Move down in folder selector
+    FolderSelectorDown,
+    /// Create new folder in selector
+    CreateNewFolder,
+    /// Confirm new folder creation
+    ConfirmNewFolder,
+
     // No action (used for unhandled keys)
     None,
 }

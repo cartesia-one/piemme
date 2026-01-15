@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::models::{ReferencePopupState, RenamePopupState};
+use crate::models::{FolderSelectorState, ReferencePopupState, RenamePopupState, TagSelectorState};
 
 /// Configuration for a popup
 pub struct PopupConfig {
@@ -334,6 +334,248 @@ pub fn render_reference_popup(frame: &mut Frame, area: Rect, state: &ReferencePo
         Style::default().fg(Color::DarkGray),
     ));
     frame.render_widget(hints, chunks[2]);
+}
+
+/// Render the tag selector popup
+pub fn render_tag_selector(frame: &mut Frame, area: Rect, state: &TagSelectorState) {
+    let config = PopupConfig::new("Manage Tags")
+        .with_size(50, 50)
+        .with_border_color(Color::Yellow);
+
+    let popup_area = centered_rect(config.width_percent, config.height_percent, area);
+
+    // Clear the background
+    frame.render_widget(Clear, popup_area);
+
+    // Create layout
+    let block = Block::default()
+        .title(format!(" {} ", config.title))
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(config.border_color));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    if state.creating_new {
+        // Show new tag input
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),  // Label
+                Constraint::Length(3),  // Input box
+                Constraint::Min(1),     // Spacer
+                Constraint::Length(1),  // Hints
+            ])
+            .margin(1)
+            .split(inner);
+
+        let label = Paragraph::new("Enter new tag name:");
+        frame.render_widget(label, chunks[0]);
+
+        let input_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow));
+
+        let input_text = Paragraph::new(format!("{}_", state.new_tag_input))
+            .style(Style::default().fg(Color::White))
+            .block(input_block);
+        frame.render_widget(input_text, chunks[1]);
+
+        let hints = Paragraph::new(Span::styled(
+            "Enter: create | Esc: cancel",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(hints, chunks[3]);
+    } else {
+        // Show tag list
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),  // Filter input
+                Constraint::Min(3),     // Tag list
+                Constraint::Length(1),  // Hints
+            ])
+            .margin(1)
+            .split(inner);
+
+        // Filter input
+        let filter_block = Block::default()
+            .title(" Filter ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow));
+
+        let filter_text = if state.filter.is_empty() {
+            Paragraph::new("Type to filter...")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(filter_block)
+        } else {
+            Paragraph::new(format!("{}_", state.filter))
+                .style(Style::default().fg(Color::White))
+                .block(filter_block)
+        };
+        frame.render_widget(filter_text, chunks[0]);
+
+        // Tag list
+        let items: Vec<ListItem> = state
+            .filtered_tags
+            .iter()
+            .enumerate()
+            .map(|(i, tag)| {
+                let is_assigned = state.is_tag_assigned(tag);
+                let checkbox = if is_assigned { "[✓] " } else { "[ ] " };
+                
+                let style = if i == state.selected_index {
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else if is_assigned {
+                    Style::default().fg(Color::Green)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                ListItem::new(Line::from(Span::styled(format!("{}{}", checkbox, tag), style)))
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .title(format!(" Tags ({}) ", state.filtered_tags.len()))
+                    .borders(Borders::ALL),
+            );
+        frame.render_widget(list, chunks[1]);
+
+        // Hints
+        let hints = Paragraph::new(Span::styled(
+            "↑↓: navigate | Enter/Space: toggle | Ctrl+n: new | Esc: done",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(hints, chunks[2]);
+    }
+}
+
+/// Render the folder selector popup
+pub fn render_folder_selector(frame: &mut Frame, area: Rect, state: &FolderSelectorState) {
+    let title = match state.mode {
+        crate::models::FolderSelectorMode::Open => "Open Folder",
+        crate::models::FolderSelectorMode::Move => "Move to Folder",
+    };
+    
+    let config = PopupConfig::new(title)
+        .with_size(50, 50)
+        .with_border_color(Color::Magenta);
+
+    let popup_area = centered_rect(config.width_percent, config.height_percent, area);
+
+    // Clear the background
+    frame.render_widget(Clear, popup_area);
+
+    // Create layout
+    let block = Block::default()
+        .title(format!(" {} ", config.title))
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(config.border_color));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    if state.creating_new {
+        // Show new folder input
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),  // Label
+                Constraint::Length(3),  // Input box
+                Constraint::Min(1),     // Spacer
+                Constraint::Length(1),  // Hints
+            ])
+            .margin(1)
+            .split(inner);
+
+        let label = Paragraph::new("Enter new folder name:");
+        frame.render_widget(label, chunks[0]);
+
+        let input_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Magenta));
+
+        let input_text = Paragraph::new(format!("{}_", state.new_folder_input))
+            .style(Style::default().fg(Color::White))
+            .block(input_block);
+        frame.render_widget(input_text, chunks[1]);
+
+        let hints = Paragraph::new(Span::styled(
+            "Enter: create | Esc: cancel",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(hints, chunks[3]);
+    } else {
+        // Show folder list
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),  // Filter input
+                Constraint::Min(3),     // Folder list
+                Constraint::Length(1),  // Hints
+            ])
+            .margin(1)
+            .split(inner);
+
+        // Filter input
+        let filter_block = Block::default()
+            .title(" Filter ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Magenta));
+
+        let filter_text = if state.filter.is_empty() {
+            Paragraph::new("Type to filter...")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(filter_block)
+        } else {
+            Paragraph::new(format!("{}_", state.filter))
+                .style(Style::default().fg(Color::White))
+                .block(filter_block)
+        };
+        frame.render_widget(filter_text, chunks[0]);
+
+        // Folder list
+        let items: Vec<ListItem> = state
+            .filtered_folders
+            .iter()
+            .enumerate()
+            .map(|(i, folder)| {
+                let icon = if folder == "(root)" { "📁 " } else { "📂 " };
+                
+                let style = if i == state.selected_index {
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                ListItem::new(Line::from(Span::styled(format!("{}{}", icon, folder), style)))
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .title(format!(" Folders ({}) ", state.filtered_folders.len()))
+                    .borders(Borders::ALL),
+            );
+        frame.render_widget(list, chunks[1]);
+
+        // Hints
+        let hints = Paragraph::new(Span::styled(
+            "↑↓: navigate | Enter: select | Ctrl+n: new folder | Esc: cancel",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(hints, chunks[2]);
+    }
 }
 
 #[cfg(test)]

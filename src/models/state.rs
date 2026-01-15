@@ -47,6 +47,10 @@ pub struct AppState {
     pub rename_popup: Option<RenamePopupState>,
     /// Reference insertion popup state
     pub reference_popup: Option<ReferencePopupState>,
+    /// Tag selector popup state
+    pub tag_selector: Option<TagSelectorState>,
+    /// Folder selector popup state
+    pub folder_selector: Option<FolderSelectorState>,
 }
 
 impl AppState {
@@ -74,6 +78,8 @@ impl AppState {
             help_scroll_offset: 0,
             rename_popup: None,
             reference_popup: None,
+            tag_selector: None,
+            folder_selector: None,
         }
     }
 
@@ -350,6 +356,257 @@ impl ReferencePopupState {
                 self.selected_index -= 1;
             }
         }
+    }
+}
+
+/// State for the tag selector popup
+#[derive(Debug, Clone)]
+pub struct TagSelectorState {
+    /// Search/filter input
+    pub filter: String,
+    /// Selected index in filtered results
+    pub selected_index: usize,
+    /// All available tags
+    pub all_tags: Vec<String>,
+    /// Filtered tags (cached)
+    pub filtered_tags: Vec<String>,
+    /// Tags currently assigned to the prompt
+    pub prompt_tags: Vec<String>,
+    /// Whether we're in "new tag" input mode
+    pub creating_new: bool,
+    /// Input for new tag name
+    pub new_tag_input: String,
+}
+
+impl TagSelectorState {
+    pub fn new(all_tags: Vec<String>, prompt_tags: Vec<String>) -> Self {
+        let filtered_tags = all_tags.clone();
+        Self {
+            filter: String::new(),
+            selected_index: 0,
+            all_tags,
+            filtered_tags,
+            prompt_tags,
+            creating_new: false,
+            new_tag_input: String::new(),
+        }
+    }
+
+    /// Update the filter and refresh filtered results
+    pub fn update_filter(&mut self) {
+        if self.filter.is_empty() {
+            self.filtered_tags = self.all_tags.clone();
+        } else {
+            let filter_lower = self.filter.to_lowercase();
+            self.filtered_tags = self.all_tags
+                .iter()
+                .filter(|tag| tag.to_lowercase().contains(&filter_lower))
+                .cloned()
+                .collect();
+        }
+        // Reset selection if out of bounds
+        if self.selected_index >= self.filtered_tags.len() {
+            self.selected_index = 0;
+        }
+    }
+
+    /// Get the currently selected tag
+    pub fn selected_tag(&self) -> Option<&str> {
+        self.filtered_tags.get(self.selected_index).map(|s| s.as_str())
+    }
+
+    /// Check if a tag is currently assigned to the prompt
+    pub fn is_tag_assigned(&self, tag: &str) -> bool {
+        self.prompt_tags.contains(&tag.to_string())
+    }
+
+    /// Toggle the selected tag on the prompt
+    pub fn toggle_selected_tag(&mut self) -> Option<(String, bool)> {
+        if let Some(tag) = self.selected_tag() {
+            let tag_owned = tag.to_string();
+            if let Some(pos) = self.prompt_tags.iter().position(|t| t == &tag_owned) {
+                self.prompt_tags.remove(pos);
+                Some((tag_owned, false)) // removed
+            } else {
+                self.prompt_tags.push(tag_owned.clone());
+                Some((tag_owned, true)) // added
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.filtered_tags.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.filtered_tags.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.filtered_tags.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.filtered_tags.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+    
+    /// Start creating a new tag
+    pub fn start_creating_new(&mut self) {
+        self.creating_new = true;
+        self.new_tag_input = self.filter.clone();
+    }
+    
+    /// Cancel creating a new tag
+    pub fn cancel_creating_new(&mut self) {
+        self.creating_new = false;
+        self.new_tag_input.clear();
+    }
+    
+    /// Confirm creating a new tag, returns the new tag name if valid
+    pub fn confirm_new_tag(&mut self) -> Option<String> {
+        let tag = self.new_tag_input.trim().to_lowercase().replace(' ', "_");
+        if tag.is_empty() {
+            return None;
+        }
+        // Add to all_tags if not already present
+        if !self.all_tags.contains(&tag) {
+            self.all_tags.push(tag.clone());
+            self.all_tags.sort();
+        }
+        // Assign to prompt
+        if !self.prompt_tags.contains(&tag) {
+            self.prompt_tags.push(tag.clone());
+        }
+        self.creating_new = false;
+        self.new_tag_input.clear();
+        self.update_filter();
+        Some(tag)
+    }
+}
+
+/// State for the folder selector popup
+#[derive(Debug, Clone)]
+pub struct FolderSelectorState {
+    /// Search/filter input
+    pub filter: String,
+    /// Selected index in filtered results
+    pub selected_index: usize,
+    /// All available folders
+    pub all_folders: Vec<String>,
+    /// Filtered folders (cached)
+    pub filtered_folders: Vec<String>,
+    /// Whether we're in "new folder" input mode
+    pub creating_new: bool,
+    /// Input for new folder name
+    pub new_folder_input: String,
+    /// Mode: 'open' to navigate into folder, 'move' to move a prompt
+    pub mode: FolderSelectorMode,
+}
+
+/// Mode for the folder selector
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FolderSelectorMode {
+    /// Open folder to view prompts
+    Open,
+    /// Move current prompt to folder
+    Move,
+}
+
+impl FolderSelectorState {
+    pub fn new(all_folders: Vec<String>, mode: FolderSelectorMode) -> Self {
+        let mut filtered_folders = vec!["(root)".to_string()];
+        filtered_folders.extend(all_folders.clone());
+        Self {
+            filter: String::new(),
+            selected_index: 0,
+            all_folders,
+            filtered_folders,
+            creating_new: false,
+            new_folder_input: String::new(),
+            mode,
+        }
+    }
+
+    /// Update the filter and refresh filtered results
+    pub fn update_filter(&mut self) {
+        self.filtered_folders = vec!["(root)".to_string()];
+        if self.filter.is_empty() {
+            self.filtered_folders.extend(self.all_folders.clone());
+        } else {
+            let filter_lower = self.filter.to_lowercase();
+            self.filtered_folders.extend(
+                self.all_folders
+                    .iter()
+                    .filter(|folder| folder.to_lowercase().contains(&filter_lower))
+                    .cloned()
+            );
+        }
+        // Reset selection if out of bounds
+        if self.selected_index >= self.filtered_folders.len() {
+            self.selected_index = 0;
+        }
+    }
+
+    /// Get the currently selected folder (None means root)
+    pub fn selected_folder(&self) -> Option<&str> {
+        self.filtered_folders.get(self.selected_index).and_then(|s| {
+            if s == "(root)" {
+                None
+            } else {
+                Some(s.as_str())
+            }
+        })
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.filtered_folders.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.filtered_folders.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.filtered_folders.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.filtered_folders.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+    
+    /// Start creating a new folder
+    pub fn start_creating_new(&mut self) {
+        self.creating_new = true;
+        self.new_folder_input = self.filter.clone();
+    }
+    
+    /// Cancel creating a new folder
+    pub fn cancel_creating_new(&mut self) {
+        self.creating_new = false;
+        self.new_folder_input.clear();
+    }
+    
+    /// Confirm creating a new folder, returns the new folder name if valid
+    pub fn confirm_new_folder(&mut self) -> Option<String> {
+        let folder = self.new_folder_input.trim().to_lowercase().replace(' ', "_");
+        if folder.is_empty() || folder == "(root)" {
+            return None;
+        }
+        // Add to all_folders if not already present
+        if !self.all_folders.contains(&folder) {
+            self.all_folders.push(folder.clone());
+            self.all_folders.sort();
+        }
+        self.creating_new = false;
+        self.new_folder_input.clear();
+        self.update_filter();
+        Some(folder)
     }
 }
 

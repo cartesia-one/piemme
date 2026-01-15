@@ -285,23 +285,23 @@
 ## Phase 11: Folder System
 
 ### 11.1 Folder Navigation
-- [ ] Implement `O` - open folder selector
-- [ ] Display folder list
-- [ ] Navigate into selected folder
+- [x] Implement `O` - open folder selector
+- [x] Display folder list
+- [x] Navigate into selected folder
 - [x] Display folder path in title bar
 
 ### 11.2 Folder Mode
-- [ ] Switch to Folder mode when in subfolder
-- [ ] Show only prompts in current folder
+- [x] Switch to Folder mode when in subfolder
+- [x] Show only prompts in current folder
 - [x] Implement `Esc` - go back to parent/root
 - [x] All normal operations available
 
 ### 11.3 Move to Folder
-- [ ] Implement `M` - move prompt to folder
-- [ ] Show folder selector
-- [ ] Option to create new folder (`Ctrl+n`)
+- [x] Implement `M` - move prompt to folder
+- [x] Show folder selector
+- [x] Option to create new folder (`Ctrl+n`)
 - [x] Move file to selected folder
-- [ ] Update prompt list
+- [x] Update prompt list
 
 ### 11.4 Folder Management
 - [x] Create new folder
@@ -313,15 +313,15 @@
 ## Phase 12: Tag System
 
 ### 12.1 Tag Selector
-- [ ] Implement `t` - open tag selector
-- [ ] Display existing tags
-- [ ] Fuzzy search tags
-- [ ] Create new tag (`Ctrl+n`)
+- [x] Implement `t` - open tag selector
+- [x] Display existing tags
+- [x] Fuzzy search tags
+- [x] Create new tag (`Ctrl+n`)
 
 ### 12.2 Tag Assignment
-- [ ] Toggle tag on selected prompt
-- [ ] Update prompt metadata
-- [ ] Save changes to file
+- [x] Toggle tag on selected prompt
+- [x] Update prompt metadata
+- [x] Save changes to file
 
 ### 12.3 Tag Colors
 - [x] Load tag colors from config

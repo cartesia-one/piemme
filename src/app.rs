@@ -5,9 +5,9 @@ use crossterm::event::{self, Event, KeyEventKind};
 use std::time::Duration;
 use tui_textarea::TextArea;
 
-use crate::config::{archive_dir, config_path, index_path, prompts_dir, Config};
+use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, ConfirmDialog, Mode, NotificationLevel, PendingAction, Prompt};
+use crate::models::{Action, AppState, ConfirmDialog, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
@@ -138,6 +138,62 @@ impl<'a> App<'a> {
                                 Action::None => {
                                     // Handle text input for filter
                                     self.handle_reference_popup_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // Handle tag selector input
+                        if self.state.tag_selector.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmTagToggle => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CancelTagSelector => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::TagSelectorUp | Action::TagSelectorDown => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CreateNewTag => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::ConfirmNewTag => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::None => {
+                                    // Handle text input for filter or new tag
+                                    self.handle_tag_selector_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // Handle folder selector input
+                        if self.state.folder_selector.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmFolderSelection => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CancelFolderSelector => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::FolderSelectorUp | Action::FolderSelectorDown => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CreateNewFolder => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::ConfirmNewFolder => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::None => {
+                                    // Handle text input for filter or new folder
+                                    self.handle_folder_selector_input(key);
                                 }
                                 _ => {}
                             }
@@ -401,14 +457,74 @@ impl<'a> App<'a> {
             }
 
             // TODO: Implement these
-            Action::OpenFolder
-            | Action::MoveToFolder
-            | Action::OpenTagSelector
-            | Action::OpenSearch
+            Action::OpenSearch
             | Action::QuickOpen
             | Action::QuickInsertReference
             | Action::Export => {
                 self.state.notify("Feature not yet implemented", NotificationLevel::Warning);
+            }
+
+            // Tag selector actions
+            Action::OpenTagSelector => {
+                self.open_tag_selector();
+            }
+            Action::ConfirmTagToggle => {
+                self.toggle_tag()?;
+            }
+            Action::CancelTagSelector => {
+                self.close_tag_selector()?;
+            }
+            Action::TagSelectorUp => {
+                if let Some(ref mut selector) = self.state.tag_selector {
+                    selector.select_previous();
+                }
+            }
+            Action::TagSelectorDown => {
+                if let Some(ref mut selector) = self.state.tag_selector {
+                    selector.select_next();
+                }
+            }
+            Action::CreateNewTag => {
+                if let Some(ref mut selector) = self.state.tag_selector {
+                    selector.start_creating_new();
+                }
+            }
+            Action::ConfirmNewTag => {
+                self.confirm_new_tag()?;
+            }
+
+            // Folder selector actions
+            Action::OpenFolder => {
+                self.open_folder_selector(FolderSelectorMode::Open)?;
+            }
+            Action::MoveToFolder => {
+                if self.state.has_prompts() {
+                    self.open_folder_selector(FolderSelectorMode::Move)?;
+                }
+            }
+            Action::ConfirmFolderSelection => {
+                self.confirm_folder_selection()?;
+            }
+            Action::CancelFolderSelector => {
+                self.state.folder_selector = None;
+            }
+            Action::FolderSelectorUp => {
+                if let Some(ref mut selector) = self.state.folder_selector {
+                    selector.select_previous();
+                }
+            }
+            Action::FolderSelectorDown => {
+                if let Some(ref mut selector) = self.state.folder_selector {
+                    selector.select_next();
+                }
+            }
+            Action::CreateNewFolder => {
+                if let Some(ref mut selector) = self.state.folder_selector {
+                    selector.start_creating_new();
+                }
+            }
+            Action::ConfirmNewFolder => {
+                self.confirm_new_folder()?;
             }
         }
 
@@ -1131,6 +1247,331 @@ impl<'a> App<'a> {
         }
 
         self.state.notify(format!("Inserted [[{}]]", selected_name), NotificationLevel::Success);
+
+        Ok(())
+    }
+
+    /// Open the tag selector popup
+    fn open_tag_selector(&mut self) {
+        if self.state.mode != Mode::Normal {
+            return;
+        }
+
+        if let Some(prompt) = self.state.selected_prompt() {
+            let prompt_tags = prompt.tags.clone();
+            let all_tags = self.state.all_tags.clone();
+            let selector = TagSelectorState::new(all_tags, prompt_tags);
+            self.state.tag_selector = Some(selector);
+        }
+    }
+
+    /// Handle text input in tag selector popup
+    fn handle_tag_selector_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        if let Some(ref mut selector) = self.state.tag_selector {
+            if selector.creating_new {
+                match key.code {
+                    KeyCode::Char(c) => {
+                        selector.new_tag_input.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        selector.new_tag_input.pop();
+                    }
+                    _ => {}
+                }
+            } else {
+                match key.code {
+                    KeyCode::Char(c) => {
+                        selector.filter.push(c);
+                        selector.update_filter();
+                    }
+                    KeyCode::Backspace => {
+                        selector.filter.pop();
+                        selector.update_filter();
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    /// Toggle the selected tag on the current prompt
+    fn toggle_tag(&mut self) -> Result<()> {
+        let (tag, added) = {
+            if let Some(ref mut selector) = self.state.tag_selector {
+                match selector.toggle_selected_tag() {
+                    Some(result) => result,
+                    None => return Ok(()),
+                }
+            } else {
+                return Ok(());
+            }
+        };
+
+        // Update the prompt's tags
+        if let Some(prompt) = self.state.selected_prompt_mut() {
+            if added {
+                if !prompt.tags.contains(&tag) {
+                    prompt.tags.push(tag.clone());
+                }
+            } else {
+                prompt.tags.retain(|t| t != &tag);
+            }
+        }
+
+        // Also update in all_prompts
+        if let Some(prompt) = self.state.selected_prompt() {
+            let id = prompt.id;
+            let new_tags = prompt.tags.clone();
+            if let Some(all_prompt) = self.all_prompts.iter_mut().find(|p| p.id == id) {
+                all_prompt.tags = new_tags;
+            }
+        }
+
+        let msg = if added {
+            format!("Added tag: {}", tag)
+        } else {
+            format!("Removed tag: {}", tag)
+        };
+        self.state.notify(msg, NotificationLevel::Success);
+
+        Ok(())
+    }
+
+    /// Close the tag selector and save changes
+    fn close_tag_selector(&mut self) -> Result<()> {
+        if let Some(selector) = self.state.tag_selector.take() {
+            // Update the prompt's tags from the selector's state
+            if let Some(prompt) = self.state.selected_prompt_mut() {
+                prompt.tags = selector.prompt_tags.clone();
+                prompt.modified = chrono::Utc::now();
+            }
+
+            // Update all_prompts as well
+            if let Some(prompt) = self.state.selected_prompt() {
+                let id = prompt.id;
+                let new_tags = prompt.tags.clone();
+                if let Some(all_prompt) = self.all_prompts.iter_mut().find(|p| p.id == id) {
+                    all_prompt.tags = new_tags;
+                }
+            }
+
+            // Update all_tags in state
+            let mut all_tags: Vec<String> = self.all_prompts
+                .iter()
+                .flat_map(|p| p.tags.clone())
+                .collect();
+            all_tags.extend(selector.all_tags);
+            all_tags.sort();
+            all_tags.dedup();
+            self.state.all_tags = all_tags;
+
+            // Save the prompt
+            self.save_current_prompt()?;
+        }
+        Ok(())
+    }
+
+    /// Confirm new tag creation
+    fn confirm_new_tag(&mut self) -> Result<()> {
+        let new_tag = {
+            if let Some(ref mut selector) = self.state.tag_selector {
+                selector.confirm_new_tag()
+            } else {
+                None
+            }
+        };
+
+        if let Some(tag) = new_tag {
+            // Add to all_tags if not present
+            if !self.state.all_tags.contains(&tag) {
+                self.state.all_tags.push(tag.clone());
+                self.state.all_tags.sort();
+            }
+
+            self.state.notify(format!("Created and assigned tag: {}", tag), NotificationLevel::Success);
+        }
+
+        Ok(())
+    }
+
+    /// Open the folder selector popup
+    fn open_folder_selector(&mut self, mode: FolderSelectorMode) -> Result<()> {
+        let folders = crate::fs::list_folders()?;
+        let selector = FolderSelectorState::new(folders, mode);
+        self.state.folder_selector = Some(selector);
+        Ok(())
+    }
+
+    /// Handle text input in folder selector popup
+    fn handle_folder_selector_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        if let Some(ref mut selector) = self.state.folder_selector {
+            if selector.creating_new {
+                match key.code {
+                    KeyCode::Char(c) => {
+                        selector.new_folder_input.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        selector.new_folder_input.pop();
+                    }
+                    _ => {}
+                }
+            } else {
+                match key.code {
+                    KeyCode::Char(c) => {
+                        selector.filter.push(c);
+                        selector.update_filter();
+                    }
+                    KeyCode::Backspace => {
+                        selector.filter.pop();
+                        selector.update_filter();
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    /// Confirm folder selection (open folder or move prompt)
+    fn confirm_folder_selection(&mut self) -> Result<()> {
+        let selector = match self.state.folder_selector.take() {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+
+        let selected = selector.selected_folder().map(|s| s.to_string());
+
+        match selector.mode {
+            FolderSelectorMode::Open => {
+                // Open the folder (or go to root)
+                match selected {
+                    None => {
+                        // Go to root - reload prompts from main prompts directory
+                        self.state.current_folder = None;
+                        self.state.mode = Mode::Normal;
+                        self.reload_prompts()?;
+                        self.state.notify("Viewing all prompts", NotificationLevel::Info);
+                    }
+                    Some(folder) => {
+                        // Load prompts from selected folder
+                        let folder_path = folders_dir()?.join(&folder);
+                        if folder_path.exists() {
+                            let prompts = load_all_prompts(&folder_path)?;
+                            self.state.prompts = prompts;
+                            self.state.current_folder = Some(folder.clone());
+                            self.state.mode = Mode::Folder;
+                            self.state.selected_index = 0;
+                            self.state.notify(format!("Opened folder: {}", folder), NotificationLevel::Info);
+                        } else {
+                            self.state.notify(format!("Folder not found: {}", folder), NotificationLevel::Error);
+                        }
+                    }
+                }
+            }
+            FolderSelectorMode::Move => {
+                // Move the current prompt to the selected folder
+                if let Some(prompt) = self.state.selected_prompt() {
+                    let name = prompt.name.clone();
+                    let source_dir = match &self.state.current_folder {
+                        None => prompts_dir()?,
+                        Some(folder) => folders_dir()?.join(folder),
+                    };
+
+                    let dest_dir = match selected {
+                        None => prompts_dir()?,
+                        Some(ref folder) => folders_dir()?.join(folder),
+                    };
+
+                    if source_dir != dest_dir {
+                        crate::fs::move_prompt(&name, &source_dir, &dest_dir)?;
+
+                        // Update index location
+                        let location = match &selected {
+                            None => "prompts".to_string(),
+                            Some(folder) => format!("folders/{}", folder),
+                        };
+                        if let Some(entry) = self.index.entries.get_mut(&name) {
+                            entry.location = location;
+                        }
+                        self.index.save(&index_path()?)?;
+
+                        // Remove from current list
+                        self.state.prompts.remove(self.state.selected_index);
+                        if self.state.selected_index >= self.state.prompts.len() && self.state.selected_index > 0 {
+                            self.state.selected_index -= 1;
+                        }
+
+                        // Also update/remove from all_prompts
+                        if let Some(pos) = self.all_prompts.iter().position(|p| p.name == name) {
+                            self.all_prompts.remove(pos);
+                        }
+
+                        let dest_name = match selected {
+                            None => "root".to_string(),
+                            Some(folder) => folder,
+                        };
+                        self.state.notify(format!("Moved '{}' to {}", name, dest_name), NotificationLevel::Success);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Confirm new folder creation
+    fn confirm_new_folder(&mut self) -> Result<()> {
+        let (new_folder, mode) = {
+            if let Some(ref mut selector) = self.state.folder_selector {
+                (selector.confirm_new_folder(), selector.mode)
+            } else {
+                return Ok(());
+            }
+        };
+
+        if let Some(folder) = new_folder {
+            // Create the folder on disk
+            crate::fs::create_folder(&folder)?;
+            self.state.notify(format!("Created folder: {}", folder), NotificationLevel::Success);
+
+            // If we're in Move mode, move the prompt there immediately
+            if mode == FolderSelectorMode::Move {
+                if let Some(prompt) = self.state.selected_prompt() {
+                    let name = prompt.name.clone();
+                    let source_dir = match &self.state.current_folder {
+                        None => prompts_dir()?,
+                        Some(f) => folders_dir()?.join(f),
+                    };
+                    let dest_dir = folders_dir()?.join(&folder);
+
+                    crate::fs::move_prompt(&name, &source_dir, &dest_dir)?;
+
+                    // Update index
+                    let location = format!("folders/{}", folder);
+                    if let Some(entry) = self.index.entries.get_mut(&name) {
+                        entry.location = location;
+                    }
+                    self.index.save(&index_path()?)?;
+
+                    // Remove from current list
+                    self.state.prompts.remove(self.state.selected_index);
+                    if self.state.selected_index >= self.state.prompts.len() && self.state.selected_index > 0 {
+                        self.state.selected_index -= 1;
+                    }
+
+                    // Also remove from all_prompts
+                    if let Some(pos) = self.all_prompts.iter().position(|p| p.name == name) {
+                        self.all_prompts.remove(pos);
+                    }
+
+                    self.state.notify(format!("Moved '{}' to {}", name, folder), NotificationLevel::Success);
+                    self.state.folder_selector = None;
+                }
+            }
+        }
 
         Ok(())
     }

@@ -9,6 +9,7 @@ pub use action::Action;
 pub use mode::Mode;
 pub use prompt::Prompt;
 pub use state::{
-    AppState, ConfirmDialog, Notification, NotificationLevel, PendingAction, PopupType,
-    ReferencePopupState, RenamePopupState,
+    AppState, ConfirmDialog, FolderSelectorMode, FolderSelectorState, Notification,
+    NotificationLevel, PendingAction, PopupType, ReferencePopupState, RenamePopupState,
+    TagSelectorState,
 };

@@ -21,6 +21,16 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_reference_popup(key);
     }
 
+    // If tag selector is active, handle it
+    if state.tag_selector.is_some() {
+        return handle_tag_selector(key, state);
+    }
+
+    // If folder selector is active, handle it
+    if state.folder_selector.is_some() {
+        return handle_folder_selector(key, state);
+    }
+
     // If help is open, handle help-specific keybindings
     if state.show_help {
         return handle_help_keys(key);
@@ -190,6 +200,56 @@ fn handle_reference_popup(key: KeyEvent) -> Action {
         }
         KeyCode::Up => Action::ReferencePopupUp,
         KeyCode::Down => Action::ReferencePopupDown,
+        // Other keys are handled directly by the popup input handling in app.rs
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when tag selector is active
+fn handle_tag_selector(key: KeyEvent, state: &AppState) -> Action {
+    // Check if we're in "new tag" creation mode
+    if let Some(ref selector) = state.tag_selector {
+        if selector.creating_new {
+            return match key.code {
+                KeyCode::Enter => Action::ConfirmNewTag,
+                KeyCode::Esc => Action::CancelTagSelector,
+                // Other keys handled in app.rs for text input
+                _ => Action::None,
+            };
+        }
+    }
+
+    match key.code {
+        KeyCode::Enter | KeyCode::Char(' ') => Action::ConfirmTagToggle,
+        KeyCode::Esc => Action::CancelTagSelector,
+        KeyCode::Up | KeyCode::Char('k') => Action::TagSelectorUp,
+        KeyCode::Down | KeyCode::Char('j') => Action::TagSelectorDown,
+        KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CreateNewTag,
+        // Other keys are handled directly by the popup input handling in app.rs
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when folder selector is active
+fn handle_folder_selector(key: KeyEvent, state: &AppState) -> Action {
+    // Check if we're in "new folder" creation mode
+    if let Some(ref selector) = state.folder_selector {
+        if selector.creating_new {
+            return match key.code {
+                KeyCode::Enter => Action::ConfirmNewFolder,
+                KeyCode::Esc => Action::CancelFolderSelector,
+                // Other keys handled in app.rs for text input
+                _ => Action::None,
+            };
+        }
+    }
+
+    match key.code {
+        KeyCode::Enter => Action::ConfirmFolderSelection,
+        KeyCode::Esc => Action::CancelFolderSelector,
+        KeyCode::Up | KeyCode::Char('k') => Action::FolderSelectorUp,
+        KeyCode::Down | KeyCode::Char('j') => Action::FolderSelectorDown,
+        KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CreateNewFolder,
         // Other keys are handled directly by the popup input handling in app.rs
         _ => Action::None,
     }
