@@ -209,9 +209,9 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 | `k` / `↑` | Select previous prompt (up) |
 | `g` | Go to first prompt |
 | `G` | Go to last prompt |
-| `Enter` / `i` | Enter insert mode (edit selected prompt) |
+| `Enter` / `i` | Enter insert mode (edit selected prompt, cursor at end) |
 | `n` | Create new prompt |
-| `r` | Rename selected prompt |
+| `r` | Rename selected prompt (opens rename popup with validation) |
 | `d` | Delete selected prompt (with confirmation) |
 | `y` | Copy rendered prompt to clipboard |
 | `p` | Toggle preview mode |
@@ -237,6 +237,7 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 | `Ctrl+s` | Save changes (explicit) |
 | `Ctrl+z` | Undo |
 | `Ctrl+y` | Redo |
+| `Ctrl+r` | Insert reference popup (fuzzy search prompts, inserts `[[prompt_name]]`) |
 | `Ctrl+l` | Quick insert reference (fuzzy search prompts) |
 | `Ctrl+←` | Move cursor word left |
 | `Ctrl+→` | Move cursor word right |
@@ -272,6 +273,30 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 | `Esc` | Cancel/close |
 | (typing) | Filter/fuzzy search |
 | `Ctrl+n` | Create new (tag/folder) |
+
+### Rename Popup
+
+When pressing `r` on a prompt, a rename popup appears:
+- Type the new name (valid characters: `a-z`, `0-9`, `_`)
+- The input box turns red if the name is invalid (invalid characters or already exists)
+- Press `Enter` to confirm, `Esc` to cancel
+
+### Reference Insertion Popup
+
+When pressing `Ctrl+r` in Insert mode:
+- A fuzzy finder popup appears with all prompt names
+- Type to filter the list
+- Use `↑`/`↓` to navigate
+- Press `Enter` to insert `[[selected_prompt]]` at cursor position
+- Press `Esc` to cancel
+
+---
+
+## Insert Mode Behavior
+
+When entering Insert mode:
+- Cursor is positioned at the **end of the file** for convenient editing
+- All changes are auto-saved when exiting Insert mode
 
 ---
 

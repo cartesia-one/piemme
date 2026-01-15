@@ -109,6 +109,34 @@ pub struct PromptFrontmatter {
     pub modified: DateTime<Utc>,
 }
 
+/// Check if a prompt name is valid (contains only valid characters)
+/// Valid characters: a-z, 0-9, underscore
+pub fn is_valid_name(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+    name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+        && !name.starts_with('_')
+        && !name.ends_with('_')
+        && !name.contains("__")
+}
+
+/// Check if a name would be unique among existing names
+pub fn is_name_unique(name: &str, existing_names: &[&str], current_name: Option<&str>) -> bool {
+    for existing in existing_names {
+        // Skip the current name (for rename validation)
+        if let Some(current) = current_name {
+            if *existing == current {
+                continue;
+            }
+        }
+        if *existing == name {
+            return false;
+        }
+    }
+    true
+}
+
 /// Generate a prompt name from its content
 ///
 /// Rules:

@@ -43,6 +43,10 @@ pub struct AppState {
     pub editor_scroll_offset: usize,
     /// Help overlay scroll offset
     pub help_scroll_offset: usize,
+    /// Rename popup state
+    pub rename_popup: Option<RenamePopupState>,
+    /// Reference insertion popup state
+    pub reference_popup: Option<ReferencePopupState>,
 }
 
 impl AppState {
@@ -68,6 +72,8 @@ impl AppState {
             editor_content: None,
             editor_scroll_offset: 0,
             help_scroll_offset: 0,
+            rename_popup: None,
+            reference_popup: None,
         }
     }
 
@@ -259,6 +265,92 @@ pub enum PendingAction {
     PermanentDelete { name: String },
     /// Execute commands (safe mode confirmation)
     ExecuteCommands { commands: Vec<String> },
+}
+
+/// State for the rename popup
+#[derive(Debug, Clone)]
+pub struct RenamePopupState {
+    /// Current input text
+    pub input: String,
+    /// Original name being renamed (for uniqueness check)
+    pub original_name: String,
+    /// Whether the current input is valid
+    pub is_valid: bool,
+    /// Error message if invalid
+    pub error_message: Option<String>,
+}
+
+impl RenamePopupState {
+    pub fn new(original_name: String) -> Self {
+        Self {
+            input: original_name.clone(),
+            original_name,
+            is_valid: true,
+            error_message: None,
+        }
+    }
+}
+
+/// State for the reference insertion popup (fuzzy finder for prompts)
+#[derive(Debug, Clone)]
+pub struct ReferencePopupState {
+    /// Search/filter input
+    pub filter: String,
+    /// Selected index in filtered results
+    pub selected_index: usize,
+    /// Filtered prompt names (cached)
+    pub filtered_names: Vec<String>,
+}
+
+impl ReferencePopupState {
+    pub fn new(all_prompt_names: Vec<String>) -> Self {
+        Self {
+            filter: String::new(),
+            selected_index: 0,
+            filtered_names: all_prompt_names,
+        }
+    }
+
+    /// Update the filter and refresh filtered results
+    pub fn update_filter(&mut self, all_names: &[String]) {
+        if self.filter.is_empty() {
+            self.filtered_names = all_names.to_vec();
+        } else {
+            let filter_lower = self.filter.to_lowercase();
+            self.filtered_names = all_names
+                .iter()
+                .filter(|name| name.to_lowercase().contains(&filter_lower))
+                .cloned()
+                .collect();
+        }
+        // Reset selection if out of bounds
+        if self.selected_index >= self.filtered_names.len() {
+            self.selected_index = 0;
+        }
+    }
+
+    /// Get the currently selected prompt name
+    pub fn selected_name(&self) -> Option<&str> {
+        self.filtered_names.get(self.selected_index).map(|s| s.as_str())
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.filtered_names.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.filtered_names.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.filtered_names.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.filtered_names.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

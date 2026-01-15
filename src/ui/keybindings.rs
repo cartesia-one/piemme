@@ -11,6 +11,16 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_confirm_dialog(key);
     }
 
+    // If rename popup is active, handle it
+    if state.rename_popup.is_some() {
+        return handle_rename_popup(key);
+    }
+
+    // If reference popup is active, handle it
+    if state.reference_popup.is_some() {
+        return handle_reference_popup(key);
+    }
+
     // If help is open, handle help-specific keybindings
     if state.show_help {
         return handle_help_keys(key);
@@ -85,7 +95,7 @@ fn handle_normal_mode(key: KeyEvent, _state: &AppState) -> Action {
 
         // Prompt management
         KeyCode::Char('n') => Action::NewPrompt,
-        KeyCode::Char('r') => Action::RenamePrompt,
+        KeyCode::Char('r') => Action::OpenRenamePopup,
         KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::DuplicatePrompt,
         KeyCode::Char('d') => Action::DeletePrompt,
         KeyCode::Char('a') => Action::ArchivePrompt,
@@ -120,6 +130,8 @@ fn handle_insert_mode(key: KeyEvent) -> Action {
         KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Undo,
         KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
         KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::QuickInsertReference,
+        // Note: CTRL+i sends Tab in terminals, so we use CTRL+r for reference popup
+        KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
         _ => Action::None, // Let tui-textarea handle other keys
     }
 }
@@ -151,6 +163,34 @@ fn handle_preview_mode(key: KeyEvent) -> Action {
         KeyCode::Esc | KeyCode::Char('p') => Action::ExitMode,
         KeyCode::Char('j') | KeyCode::Down => Action::MoveDown,
         KeyCode::Char('k') | KeyCode::Up => Action::MoveUp,
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when rename popup is active
+fn handle_rename_popup(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Enter => Action::ConfirmRename,
+        KeyCode::Esc => Action::CancelRename,
+        // Other keys are handled directly by the popup input handling in app.rs
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when reference popup is active
+fn handle_reference_popup(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Enter => Action::ConfirmReference,
+        KeyCode::Esc => Action::CancelReference,
+        KeyCode::Up | KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::ReferencePopupUp
+        }
+        KeyCode::Down | KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::ReferencePopupDown
+        }
+        KeyCode::Up => Action::ReferencePopupUp,
+        KeyCode::Down => Action::ReferencePopupDown,
+        // Other keys are handled directly by the popup input handling in app.rs
         _ => Action::None,
     }
 }

@@ -13,8 +13,8 @@ use crate::config::Config;
 use crate::models::AppState;
 
 use super::components::{
-    render_confirm_dialog, render_help_overlay, render_prompt_list, render_status_bar,
-    render_title_bar,
+    render_confirm_dialog, render_help_overlay, render_prompt_list, render_reference_popup,
+    render_rename_popup, render_status_bar, render_title_bar,
 };
 
 /// Render the entire application
@@ -72,6 +72,16 @@ pub fn render(
             &dialog.message,
             dialog.yes_selected,
         );
+    }
+
+    // Render rename popup if active
+    if let Some(rename_state) = &state.rename_popup {
+        render_rename_popup(frame, size, rename_state);
+    }
+
+    // Render reference popup if active
+    if let Some(ref_state) = &state.reference_popup {
+        render_reference_popup(frame, size, ref_state);
     }
 }
 

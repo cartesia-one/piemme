@@ -96,6 +96,54 @@ impl<'a> App<'a> {
                 if let Event::Key(key) = event::read()? {
                     // Only handle key press events (not release)
                     if key.kind == KeyEventKind::Press {
+                        // Handle rename popup input
+                        if self.state.rename_popup.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmRename => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CancelRename => {
+                                    self.state.rename_popup = None;
+                                }
+                                Action::None => {
+                                    // Handle text input for rename popup
+                                    self.handle_rename_popup_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // Handle reference popup input
+                        if self.state.reference_popup.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmReference => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CancelReference => {
+                                    self.state.reference_popup = None;
+                                }
+                                Action::ReferencePopupUp => {
+                                    if let Some(ref mut popup) = self.state.reference_popup {
+                                        popup.select_previous();
+                                    }
+                                }
+                                Action::ReferencePopupDown => {
+                                    if let Some(ref mut popup) = self.state.reference_popup {
+                                        popup.select_next();
+                                    }
+                                }
+                                Action::None => {
+                                    // Handle text input for filter
+                                    self.handle_reference_popup_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // In Insert mode, let the editor handle most keys
                         if self.state.mode == Mode::Insert {
                             if let Some(ref mut editor) = self.editor {
@@ -115,6 +163,9 @@ impl<'a> App<'a> {
                                         self.handle_action(action)?;
                                     }
                                     Action::Quit => {
+                                        self.handle_action(action)?;
+                                    }
+                                    Action::OpenReferencePopup => {
                                         self.handle_action(action)?;
                                     }
                                     _ => {
@@ -185,12 +236,13 @@ impl<'a> App<'a> {
                         // Save on exit from insert mode
                         self.exit_insert_mode()?;
                     }
-                    Mode::Archive | Mode::Folder | Mode::Preview => {
-                        self.state.mode = Mode::Normal;
+                    Mode::Archive | Mode::Folder => {
                         // Reload main prompts when exiting archive/folder
-                        if matches!(self.state.mode, Mode::Archive | Mode::Folder) {
-                            self.reload_prompts()?;
-                        }
+                        self.reload_prompts()?;
+                        self.state.mode = Mode::Normal;
+                    }
+                    Mode::Preview => {
+                        self.state.mode = Mode::Normal;
                     }
                     Mode::Normal => {}
                 }
@@ -303,6 +355,41 @@ impl<'a> App<'a> {
                 self.rename_current_prompt()?;
             }
 
+            // Open rename popup
+            Action::OpenRenamePopup => {
+                self.open_rename_popup();
+            }
+
+            // Confirm rename from popup
+            Action::ConfirmRename => {
+                self.confirm_rename_popup()?;
+            }
+
+            // Cancel rename popup
+            Action::CancelRename => {
+                self.state.rename_popup = None;
+            }
+
+            // Open reference popup (CTRL+i in insert mode)
+            Action::OpenReferencePopup => {
+                self.open_reference_popup();
+            }
+
+            // Confirm reference selection
+            Action::ConfirmReference => {
+                self.confirm_reference_popup()?;
+            }
+
+            // Cancel reference popup
+            Action::CancelReference => {
+                self.state.reference_popup = None;
+            }
+
+            // Reference popup navigation (handled in run loop, but just in case)
+            Action::ReferencePopupUp | Action::ReferencePopupDown => {
+                // Handled in run loop
+            }
+
             // Duplicate prompt
             Action::DuplicatePrompt => {
                 self.duplicate_current_prompt()?;
@@ -333,11 +420,23 @@ impl<'a> App<'a> {
         if let Some(prompt) = self.state.selected_prompt() {
             // Create textarea with current content
             let lines: Vec<String> = prompt.content.lines().map(String::from).collect();
-            let textarea = TextArea::new(if lines.is_empty() {
+            let mut textarea = TextArea::new(if lines.is_empty() {
                 vec![String::new()]
             } else {
                 lines
             });
+
+            // Move cursor to end of file
+            let line_count = textarea.lines().len();
+            if line_count > 0 {
+                let last_line_idx = line_count - 1;
+                let last_line_len = textarea.lines()[last_line_idx].len();
+                textarea.move_cursor(tui_textarea::CursorMove::Jump(
+                    last_line_idx as u16,
+                    last_line_len as u16,
+                ));
+            }
+
             self.editor = Some(textarea);
             self.state.mode = Mode::Insert;
             self.state.editor_focused = true;
@@ -754,6 +853,9 @@ impl<'a> App<'a> {
                     if let Err(e) = clipboard.set_text(&content) {
                         self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
                     } else {
+                        // On Linux, clipboard content is owned by the application.
+                        // We need to keep the clipboard alive briefly for clipboard managers to capture it.
+                        std::thread::sleep(Duration::from_millis(100));
                         self.state.notify("Copied to clipboard", NotificationLevel::Success);
                     }
                 }
@@ -855,6 +957,180 @@ impl<'a> App<'a> {
         if self.state.selected_index >= self.state.prompts.len() {
             self.state.selected_index = self.state.prompts.len().saturating_sub(1);
         }
+
+        Ok(())
+    }
+
+    /// Open the rename popup
+    fn open_rename_popup(&mut self) {
+        if self.state.mode != Mode::Normal {
+            return;
+        }
+
+        if let Some(prompt) = self.state.selected_prompt() {
+            let popup = crate::models::RenamePopupState::new(prompt.name.clone());
+            self.state.rename_popup = Some(popup);
+        }
+    }
+
+    /// Handle text input in rename popup
+    fn handle_rename_popup_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        if let Some(ref mut popup) = self.state.rename_popup {
+            match key.code {
+                KeyCode::Char(c) => {
+                    popup.input.push(c);
+                    self.validate_rename_input();
+                }
+                KeyCode::Backspace => {
+                    popup.input.pop();
+                    self.validate_rename_input();
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Validate the current rename input
+    fn validate_rename_input(&mut self) {
+        if let Some(ref mut popup) = self.state.rename_popup {
+            let input = &popup.input;
+
+            // Check if name is valid format
+            if !crate::models::prompt::is_valid_name(input) {
+                popup.is_valid = false;
+                popup.error_message = Some("Invalid characters (use a-z, 0-9, _)".to_string());
+                return;
+            }
+
+            // Check if name is unique
+            let existing_names: Vec<&str> = self.all_prompts
+                .iter()
+                .map(|p| p.name.as_str())
+                .collect();
+
+            if !crate::models::prompt::is_name_unique(input, &existing_names, Some(&popup.original_name)) {
+                popup.is_valid = false;
+                popup.error_message = Some("Name already exists".to_string());
+                return;
+            }
+
+            popup.is_valid = true;
+            popup.error_message = None;
+        }
+    }
+
+    /// Confirm rename from popup
+    fn confirm_rename_popup(&mut self) -> Result<()> {
+        let popup = match self.state.rename_popup.take() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        if !popup.is_valid {
+            // Put the popup back if not valid
+            self.state.rename_popup = Some(popup);
+            return Ok(());
+        }
+
+        let old_name = popup.original_name;
+        let new_name = popup.input;
+
+        if old_name == new_name {
+            self.state.notify("Name unchanged", NotificationLevel::Info);
+            return Ok(());
+        }
+
+        // Rename file on disk
+        let dir = prompts_dir()?;
+        crate::fs::rename_prompt(&old_name, &new_name, &dir)?;
+
+        // Update index
+        self.index.remove(&old_name);
+
+        // Update the prompt in state
+        if let Some(prompt) = self.state.selected_prompt_mut() {
+            prompt.name = new_name.clone();
+
+            // Re-add to index with new name
+            let entry = IndexEntry::from_prompt(prompt, "prompts");
+            self.index.upsert(entry);
+        }
+
+        // Also update in all_prompts
+        if let Some(prompt) = self.all_prompts.iter_mut().find(|p| p.name == old_name) {
+            prompt.name = new_name.clone();
+        }
+
+        self.index.save(&index_path()?)?;
+
+        self.state.notify(format!("Renamed '{}' to '{}'", old_name, new_name), NotificationLevel::Success);
+
+        Ok(())
+    }
+
+    /// Open the reference popup (for CTRL+i in insert mode)
+    fn open_reference_popup(&mut self) {
+        if self.state.mode != Mode::Insert {
+            return;
+        }
+
+        let all_names: Vec<String> = self.all_prompts
+            .iter()
+            .map(|p| p.name.clone())
+            .collect();
+
+        let popup = crate::models::ReferencePopupState::new(all_names);
+        self.state.reference_popup = Some(popup);
+    }
+
+    /// Handle text input in reference popup
+    fn handle_reference_popup_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        let all_names: Vec<String> = self.all_prompts
+            .iter()
+            .map(|p| p.name.clone())
+            .collect();
+
+        if let Some(ref mut popup) = self.state.reference_popup {
+            match key.code {
+                KeyCode::Char(c) => {
+                    popup.filter.push(c);
+                    popup.update_filter(&all_names);
+                }
+                KeyCode::Backspace => {
+                    popup.filter.pop();
+                    popup.update_filter(&all_names);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Confirm reference selection and insert into editor
+    fn confirm_reference_popup(&mut self) -> Result<()> {
+        let popup = match self.state.reference_popup.take() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        let selected_name = match popup.selected_name() {
+            Some(name) => name.to_string(),
+            None => {
+                self.state.notify("No prompt selected", NotificationLevel::Warning);
+                return Ok(());
+            }
+        };
+
+        // Insert the reference into the editor
+        if let Some(ref mut editor) = self.editor {
+            let reference = format!("[[{}]]", selected_name);
+            editor.insert_str(&reference);
+        }
+
+        self.state.notify(format!("Inserted [[{}]]", selected_name), NotificationLevel::Success);
 
         Ok(())
     }

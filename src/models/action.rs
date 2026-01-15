@@ -101,6 +101,26 @@ pub enum Action {
     /// Cancel current dialog
     Cancel,
 
+    // Rename popup actions
+    /// Open rename popup
+    OpenRenamePopup,
+    /// Confirm rename
+    ConfirmRename,
+    /// Cancel rename popup
+    CancelRename,
+
+    // Reference insertion popup actions (CTRL+i in insert mode)
+    /// Open reference insertion popup
+    OpenReferencePopup,
+    /// Confirm reference selection
+    ConfirmReference,
+    /// Cancel reference popup
+    CancelReference,
+    /// Move up in reference popup
+    ReferencePopupUp,
+    /// Move down in reference popup
+    ReferencePopupDown,
+
     // No action (used for unhandled keys)
     None,
 }

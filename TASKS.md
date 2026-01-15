@@ -147,6 +147,7 @@
 - [x] Implement `Enter`/`i` to enter Insert mode
 - [x] Implement `Esc` to exit Insert mode
 - [x] Visual mode indicator update
+- [x] Position cursor at end of file when entering Insert mode
 
 ### 6.2 Text Editor Integration
 - [x] Configure tui-textarea
@@ -182,7 +183,7 @@
 
 ### 7.2 Rename Prompt
 - [x] Implement `r` - rename prompt (auto-rename from content)
-- [ ] Show rename input popup
+- [x] Show rename input popup
 - [x] Validate new name (unique, valid chars)
 - [x] Rename file on filesystem
 - [ ] Update all references to old name (optional/future)
@@ -357,9 +358,10 @@
 - [ ] Update results as user types
 
 ### 13.4 Quick Insert Reference
-- [ ] Implement `Ctrl+l` in Insert mode
-- [ ] Open prompt selector
-- [ ] Insert `[[selected_prompt]]` at cursor
+- [x] Implement `Ctrl+r` in Insert mode (reference popup)
+- [ ] Implement `Ctrl+l` in Insert mode (alternative binding)
+- [x] Open prompt selector
+- [x] Insert `[[selected_prompt]]` at cursor
 
 ---
 
