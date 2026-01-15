@@ -11,7 +11,10 @@ use ratatui::{
 use crate::config::Config;
 use crate::models::AppState;
 
-use super::components::{render_help_overlay, render_prompt_list, render_status_bar, render_title_bar};
+use super::components::{
+    render_confirm_dialog, render_help_overlay, render_prompt_list, render_status_bar,
+    render_title_bar,
+};
 
 /// Render the entire application
 pub fn render(frame: &mut Frame, state: &AppState, config: &Config, archived_count: usize) {
@@ -51,6 +54,17 @@ pub fn render(frame: &mut Frame, state: &AppState, config: &Config, archived_cou
     // Render help overlay if active
     if state.show_help {
         render_help_overlay(frame, size, state.mode);
+    }
+
+    // Render confirmation dialog if active
+    if let Some(dialog) = &state.confirm_dialog {
+        render_confirm_dialog(
+            frame,
+            size,
+            &dialog.title,
+            &dialog.message,
+            dialog.yes_selected,
+        );
     }
 }
 

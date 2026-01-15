@@ -1,6 +1,6 @@
 //! Application state management
 
-use super::{Mode, Prompt};
+use super::{Action, Mode, Prompt};
 
 /// The complete application state
 #[derive(Debug)]
@@ -35,6 +35,8 @@ pub struct AppState {
     pub input_buffer: String,
     /// Scroll offset for the prompt list
     pub list_scroll_offset: usize,
+    /// Confirmation dialog state
+    pub confirm_dialog: Option<ConfirmDialog>,
 }
 
 impl AppState {
@@ -56,6 +58,7 @@ impl AppState {
             editor_focused: false,
             input_buffer: String::new(),
             list_scroll_offset: 0,
+            confirm_dialog: None,
         }
     }
 
@@ -177,6 +180,47 @@ pub enum PopupType {
     Export,
     /// Command confirmation (safe mode)
     CommandConfirm { commands: Vec<String> },
+}
+
+/// State for confirmation dialogs
+#[derive(Debug, Clone)]
+pub struct ConfirmDialog {
+    /// Title of the dialog
+    pub title: String,
+    /// Message to display
+    pub message: String,
+    /// Whether "Yes" is selected (true) or "No" (false)
+    pub yes_selected: bool,
+    /// Action to execute if confirmed
+    pub pending_action: PendingAction,
+}
+
+impl ConfirmDialog {
+    /// Create a new confirmation dialog
+    pub fn new(title: impl Into<String>, message: impl Into<String>, action: PendingAction) -> Self {
+        Self {
+            title: title.into(),
+            message: message.into(),
+            yes_selected: false, // Default to "No" for safety
+            pending_action: action,
+        }
+    }
+
+    /// Toggle selection between Yes and No
+    pub fn toggle_selection(&mut self) {
+        self.yes_selected = !self.yes_selected;
+    }
+}
+
+/// Actions that require confirmation before execution
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PendingAction {
+    /// Delete the prompt with the given name
+    DeletePrompt { name: String },
+    /// Permanently delete from archive
+    PermanentDelete { name: String },
+    /// Execute commands (safe mode confirmation)
+    ExecuteCommands { commands: Vec<String> },
 }
 
 #[cfg(test)]

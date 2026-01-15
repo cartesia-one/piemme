@@ -87,7 +87,7 @@
 - [ ] Create `Editor` component (wrapper around tui-textarea)
 - [x] Create `StatusBar` component
 - [x] Create `HelpOverlay` component
-- [ ] Create `Popup` component (for selectors)
+- [x] Create `Popup` component (for selectors)
 
 ---
 
@@ -189,7 +189,7 @@
 
 ### 7.3 Delete Prompt
 - [x] Implement `d` - delete prompt
-- [ ] Show confirmation dialog
+- [x] Show confirmation dialog
 - [x] Delete file from filesystem
 - [x] Remove from prompt list
 - [x] Update index
@@ -276,7 +276,7 @@
 - [x] Move file back to prompts/
 - [x] Add to main list
 - [x] Implement `Delete` - permanent delete
-- [ ] Show confirmation for delete
+- [x] Show confirmation for delete
 - [x] Implement `Esc` - exit archive view
 
 ---
@@ -401,15 +401,15 @@
 ## Phase 16: Popup Components
 
 ### 16.1 Generic Popup
-- [ ] Create reusable popup component
+- [x] Create reusable popup component
 - [ ] Support text input
 - [ ] Support list selection
 - [ ] Support fuzzy filtering
 
 ### 16.2 Confirmation Dialog
-- [ ] Create confirmation popup
-- [ ] Yes/No options
-- [ ] Custom message support
+- [x] Create confirmation popup
+- [x] Yes/No options
+- [x] Custom message support
 
 ### 16.3 Notification System
 - [x] Implement notification display

@@ -6,6 +6,11 @@ use crate::models::{Action, AppState, Mode};
 
 /// Handle a key event and return the corresponding action
 pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
+    // If a confirmation dialog is active, handle it first
+    if state.confirm_dialog.is_some() {
+        return handle_confirm_dialog(key);
+    }
+
     // Global keybindings (work in all modes)
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -24,6 +29,23 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         Mode::Archive => handle_archive_mode(key),
         Mode::Folder => handle_folder_mode(key, state),
         Mode::Preview => handle_preview_mode(key),
+    }
+}
+
+/// Handle keys when a confirmation dialog is active
+fn handle_confirm_dialog(key: KeyEvent) -> Action {
+    match key.code {
+        // Toggle between Yes/No
+        KeyCode::Left | KeyCode::Right | KeyCode::Char('h') | KeyCode::Char('l') | KeyCode::Tab => {
+            Action::ToggleConfirmSelection
+        }
+        // Confirm selection
+        KeyCode::Enter => Action::Confirm,
+        // Cancel (always cancels, regardless of selection)
+        KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => Action::Cancel,
+        // Quick confirm with 'y'
+        KeyCode::Char('y') | KeyCode::Char('Y') => Action::Confirm,
+        _ => Action::None,
     }
 }
 

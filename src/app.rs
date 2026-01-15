@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use crate::config::{archive_dir, config_path, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, Mode, NotificationLevel, Prompt};
+use crate::models::{Action, AppState, ConfirmDialog, Mode, NotificationLevel, PendingAction, Prompt};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
@@ -173,7 +173,7 @@ impl App {
                 self.create_new_prompt()?;
             }
             Action::DeletePrompt => {
-                self.delete_current_prompt()?;
+                self.request_delete_confirmation()?;
             }
             Action::ArchivePrompt => {
                 self.archive_current_prompt()?;
@@ -220,11 +220,25 @@ impl App {
             Action::CloseOverlay => {
                 self.state.show_help = false;
                 self.state.active_popup = None;
+                self.state.confirm_dialog = None;
+            }
+            Action::ToggleConfirmSelection => {
+                if let Some(dialog) = &mut self.state.confirm_dialog {
+                    dialog.toggle_selection();
+                }
             }
 
             // Application
             Action::Quit => {
                 self.state.should_quit = true;
+            }
+
+            // Confirmation dialog actions
+            Action::Confirm => {
+                self.handle_confirm()?;
+            }
+            Action::Cancel => {
+                self.state.confirm_dialog = None;
             }
 
             // Save
@@ -251,9 +265,7 @@ impl App {
             | Action::QuickInsertReference
             | Action::Undo
             | Action::Redo
-            | Action::Export
-            | Action::Confirm
-            | Action::Cancel => {
+            | Action::Export => {
                 self.state.notify("Feature not yet implemented", NotificationLevel::Warning);
             }
         }
@@ -408,7 +420,87 @@ impl App {
         Ok(())
     }
 
-    /// Delete the current prompt
+    /// Request confirmation before deleting
+    fn request_delete_confirmation(&mut self) -> Result<()> {
+        if let Some(prompt) = self.state.selected_prompt() {
+            let name = prompt.name.clone();
+            let is_archive = self.state.mode == Mode::Archive;
+            
+            let (title, message, action) = if is_archive {
+                (
+                    "Permanently Delete",
+                    format!("Are you sure you want to permanently delete '{}'?\n\nThis cannot be undone.", name),
+                    PendingAction::PermanentDelete { name },
+                )
+            } else {
+                (
+                    "Delete Prompt",
+                    format!("Are you sure you want to delete '{}'?", name),
+                    PendingAction::DeletePrompt { name },
+                )
+            };
+            
+            self.state.confirm_dialog = Some(ConfirmDialog::new(title, message, action));
+        }
+        
+        Ok(())
+    }
+
+    /// Handle confirmation of a pending action
+    fn handle_confirm(&mut self) -> Result<()> {
+        if let Some(dialog) = self.state.confirm_dialog.take() {
+            if dialog.yes_selected {
+                match dialog.pending_action {
+                    PendingAction::DeletePrompt { name } | PendingAction::PermanentDelete { name } => {
+                        self.execute_delete(&name)?;
+                    }
+                    PendingAction::ExecuteCommands { commands: _ } => {
+                        // TODO: Handle command execution confirmation
+                        self.state.notify("Command execution not yet implemented", NotificationLevel::Warning);
+                    }
+                }
+            }
+            // Dialog is already taken (consumed), no need to clear
+        }
+        
+        Ok(())
+    }
+
+    /// Execute the actual deletion
+    fn execute_delete(&mut self, name: &str) -> Result<()> {
+        // Determine directory based on mode
+        let dir = match self.state.mode {
+            Mode::Archive => archive_dir()?,
+            _ => prompts_dir()?,
+        };
+
+        // Delete from disk
+        delete_prompt(name, &dir)?;
+
+        // Remove from index
+        self.index.remove(name);
+        self.index.save(&index_path()?)?;
+
+        // Remove from list
+        if let Some(pos) = self.state.prompts.iter().position(|p| p.name == name) {
+            self.state.prompts.remove(pos);
+            
+            // Adjust selection
+            if self.state.selected_index >= self.state.prompts.len() && self.state.selected_index > 0 {
+                self.state.selected_index -= 1;
+            }
+        }
+
+        if self.state.mode == Mode::Archive {
+            self.archived_count = self.archived_count.saturating_sub(1);
+        }
+
+        self.state.notify(format!("Deleted '{}'", name), NotificationLevel::Success);
+        
+        Ok(())
+    }
+
+    /// Delete the current prompt (kept for backwards compatibility, now uses confirmation)
     fn delete_current_prompt(&mut self) -> Result<()> {
         if let Some(prompt) = self.state.selected_prompt() {
             let name = prompt.name.clone();

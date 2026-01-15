@@ -86,6 +86,8 @@ pub enum Action {
     OpenHelp,
     /// Close current overlay/popup
     CloseOverlay,
+    /// Toggle selection in confirmation dialog (Yes/No)
+    ToggleConfirmSelection,
 
     // Application
     /// Quit the application
