@@ -4,9 +4,9 @@
 Output output/07-search-actions.gif
 
 Set Shell "bash"
-Set FontSize 20
-Set Width 1400
-Set Height 800
+Set FontSize 18
+Set Width 1600
+Set Height 900
 Set Theme "Dracula"
 Set TypingSpeed 55ms
 Set Padding 20

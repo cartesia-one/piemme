@@ -1,12 +1,12 @@
 # VHS Tape: Creating and Editing Prompts
-# Demonstrates: n to create, vim editing (i/o/dd/u), Escape to save
+# Demonstrates: n to create, vim editing (i/o/u), Escape to save
 
 Output output/02-create-edit.gif
 
 Set Shell "bash"
-Set FontSize 20
-Set Width 1400
-Set Height 800
+Set FontSize 18
+Set Width 1600
+Set Height 900
 Set Theme "Dracula"
 Set TypingSpeed 50ms
 Set Padding 20
@@ -59,36 +59,31 @@ Sleep 400ms
 Enter
 Sleep 800ms
 
-# We're in Vim Normal mode - navigate
+# We're in Vim Normal mode - navigate to end
 Type "G"
 Sleep 500ms
 
-# Open new line below with 'o'
+# Open new line below with 'o' (enters insert mode)
 Type "o"
 Sleep 400ms
 
 # Type additional content
-Enter
 Type "Be thorough and precise."
 Sleep 800ms
 
-# Exit insert mode
+# Exit insert mode back to vim normal
 Escape
-Sleep 500ms
+Sleep 600ms
 
 # Undo the change with 'u'
 Type "u"
-Sleep 800ms
+Sleep 1000ms
 
 # Redo with Ctrl+r
 Ctrl+r
-Sleep 800ms
+Sleep 1000ms
 
-# Delete line with 'dd'
-Type "dd"
-Sleep 600ms
-
-# Exit and save
+# Exit editor and save
 Escape
 Sleep 1200ms
 
