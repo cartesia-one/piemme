@@ -46,13 +46,10 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_help_keys(key);
     }
 
-    // Global keybindings (work in all modes except Insert for some keys)
+    // Global keybindings (work in all modes)
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            // In Insert mode, Ctrl+C is for copying, not quitting
-            if state.mode != Mode::Insert {
-                return Action::Quit;
-            }
+            return Action::Quit;
         }
         KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             // Ctrl+y copies rendered prompt to clipboard in all modes
@@ -253,10 +250,9 @@ fn handle_vim_insert_mode(key: KeyEvent) -> Action {
         
         // Standard editor shortcuts that work in insert mode
         // Note: Ctrl+y is handled globally for CopyRendered
+        // Note: Ctrl+c is handled globally for Quit
         KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Undo,
         KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
-        KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CopySelection,
-        KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Paste,
         KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::QuickInsertReference,
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
         KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenFilePicker,

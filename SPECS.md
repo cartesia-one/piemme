@@ -193,7 +193,7 @@ Use keyboard shortcuts for text selection instead:
 - `Shift+Home/End`: Select to beginning/end of line
 - `Ctrl+a`: Select all text
 
-After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
+After selecting text, use vim-style `y` to yank (copy) to internal buffer.
 
 ---
 
@@ -217,7 +217,7 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 #### 2b. Vim Insert Mode
 - Actually type and edit text
 - Press `Esc` to return to Vim Normal mode
-- Standard editor shortcuts (Ctrl+C, Ctrl+V, etc.) work here
+- Standard shortcuts like `Ctrl+z` (undo), `Ctrl+a` (select all) work here
 
 #### 2c. Vim Visual Mode
 - Select text using vim movements
@@ -248,7 +248,7 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | Key | Action |
 |-----|--------|
 | `?` | Open help overlay (except when typing in Insert mode) |
-| `q` | Quit application (with confirmation if unsaved) |
+| `Ctrl+c` / `q` | Quit application (with confirmation if unsaved) |
 | `Ctrl+y` | Copy rendered prompt to clipboard (overrides vim-style y) |
 | `Ctrl+l` | Increase left column width (Normal mode) |
 | `Ctrl+h` | Decrease left column width (Normal mode) |
@@ -341,7 +341,6 @@ The `d`, `c`, and `y` keys enter "operator-pending" mode, waiting for a motion:
 
 **Note on Yank/Paste:**
 Vim-style `y`/`p`/`P` operations use an internal buffer (not the system clipboard).
-Use `Ctrl+c`/`Ctrl+v` in Insert mode to interact with the system clipboard.
 Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 
 #### Editor - Vim Insert Mode
@@ -352,8 +351,6 @@ Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 | `Ctrl+s` | Save changes |
 | `Ctrl+z` | Undo |
 | `Ctrl+a` | Select all text |
-| `Ctrl+c` | Copy selected text to system clipboard |
-| `Ctrl+v` | Paste from system clipboard |
 | `Ctrl+r` | Open reference insertion popup |
 | `Ctrl+f` | Open file picker popup for `[[file:...]]` insertion |
 | `Shift+Arrow` | Extend text selection (hybrid) |
@@ -436,7 +433,7 @@ When pressing `Ctrl+f` in Insert mode:
 
 The editor uses a **hybrid Vim/normal editing model** that combines:
 - Vim-style modal editing (Normal/Insert/Visual modes within the editor)
-- Standard editor shortcuts (Ctrl+C, Ctrl+V, Shift+Arrow selection)
+- Standard editor shortcuts (Ctrl+z undo, Ctrl+a select all, Shift+Arrow selection)
 
 ### Entering the Editor
 
@@ -484,8 +481,8 @@ The editor supports both Vim and traditional editing paradigms:
 |---------|-----------|-------------------|
 | Selection | `v` Visual mode + movements | `Shift+Arrow` keys |
 | Select All | (manual) | `Ctrl+a` |
-| Copy | `y` (yank to internal buffer) | `Ctrl+c` (to system clipboard) |
-| Paste | `p` (put from internal buffer) | `Ctrl+v` (from system clipboard) |
+| Copy | `y` (yank to internal buffer) | - |
+| Paste | `p` (put from internal buffer) | Terminal paste |
 | Undo | `u` | `Ctrl+z` |
 | Copy Rendered Prompt | N/A | `Ctrl+y` (global, all modes) |
 

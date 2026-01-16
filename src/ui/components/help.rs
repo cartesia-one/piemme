@@ -85,7 +85,7 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
         ]),
         Line::from(""),
         key_binding("?", "Open/close this help"),
-        key_binding("q", "Quit application"),
+        key_binding("Ctrl+c / q", "Quit application"),
         key_binding("Ctrl+y", "Copy rendered to clipboard"),
         Line::from(""),
     ];
@@ -183,8 +183,6 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
                 key_binding("Ctrl+s", "Save"),
                 key_binding("Ctrl+z", "Undo"),
                 key_binding("Ctrl+a", "Select all"),
-                key_binding("Ctrl+c", "Copy selection"),
-                key_binding("Ctrl+v", "Paste"),
                 key_binding("Shift+Arrows", "Extend selection"),
                 key_binding("Ctrl+r", "Insert reference"),
                 key_binding("Ctrl+f", "Insert file reference"),
