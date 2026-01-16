@@ -4,14 +4,14 @@
 Output output/08-rename.gif
 
 Set Shell "bash"
-Set FontSize 16
-Set Width 1000
-Set Height 600
+Set FontSize 22
+Set Width 1400
+Set Height 800
 Set Theme "Dracula"
 Set TypingSpeed 50ms
 Set Padding 20
 
-# Setup
+# Setup: copy fixture and pre-build
 Hide
 Type "cd /var/home/federico/Projects/piemme"
 Enter
@@ -22,12 +22,15 @@ Sleep 300ms
 Type "cp -r gifs/fixtures/demo-piemme .piemme"
 Enter
 Sleep 300ms
+Type "cargo build --release 2>/dev/null"
+Enter
+Sleep 5s
 Show
 
-# Start piemme
-Type "cargo run --release -q"
+# Start piemme (using pre-built binary)
+Type "./target/release/piemme"
 Enter
-Sleep 2s
+Sleep 3s
 
 # Show initial state
 Sleep 1s

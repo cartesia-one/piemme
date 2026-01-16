@@ -4,9 +4,9 @@
 Output output/01-navigation.gif
 
 Set Shell "bash"
-Set FontSize 16
-Set Width 1000
-Set Height 600
+Set FontSize 22
+Set Width 1400
+Set Height 800
 Set Theme "Dracula"
 Set TypingSpeed 75ms
 Set Padding 20
@@ -15,19 +15,17 @@ Set Padding 20
 Hide
 Type "cd /var/home/federico/Projects/piemme"
 Enter
-Sleep 300ms
-Type "rm -rf .piemme"
+Sleep 500ms
+Type "rm -rf .piemme && cp -r gifs/fixtures/demo-piemme .piemme"
 Enter
-Sleep 300ms
-Type "cp -r gifs/fixtures/demo-piemme .piemme"
-Enter
-Sleep 300ms
+Sleep 500ms
 Show
 
-# Start piemme
-Type "cargo run --release -q"
+# Start piemme and wait for UI to load
+Type "cargo run -q"
 Enter
-Sleep 2s
+Wait+Screen /piemme/
+Sleep 1s
 
 # Show initial state
 Sleep 1s
