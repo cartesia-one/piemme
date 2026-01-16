@@ -13,7 +13,7 @@ GIF demos are located in `gifs/output/` and showcase all major features:
 | GIF | Features Demonstrated |
 |-----|----------------------|
 | `01-navigation.gif` | Basic navigation (j/k/g/G), panel resize (Ctrl+l/h), help overlay |
-| `02-create-edit.gif` | Create prompts (n), vim editing (i/o/dd/u/Ctrl+r), save with Esc |
+| `02-create-edit.gif` | Create prompts (n), vim editing (i/o/dd/u), save with Esc |
 | `03-references.gif` | `[[reference]]` syntax, Ctrl+r insertion, preview mode, prompt composition |
 | `04-commands.gif` | `{{command}}` syntax, safe mode toggle (!), command execution on copy |
 | `05-tags-filtering.gif` | Tag selector (t), create tags (Ctrl+n), filter cycling ([/]) |
@@ -315,7 +315,6 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `cc` | Change entire line |
 | `C` | Change to end of line |
 | `u` | Undo |
-| `Ctrl+r` | Redo |
 | `y` | Start yank operator (waits for motion: `yw`, `y$`, `y{`, etc.) |
 | `yy` | Yank (copy) current line to internal buffer |
 | `p` | Put (paste) from internal buffer after cursor |
@@ -475,7 +474,6 @@ The editor supports both Vim and traditional editing paradigms:
 | Copy | `y` (yank to internal buffer) | `Ctrl+c` (to system clipboard) |
 | Paste | `p` (put from internal buffer) | `Ctrl+v` (from system clipboard) |
 | Undo | `u` | `Ctrl+z` |
-| Redo | `Ctrl+r` | `Ctrl+r` |
 | Copy Rendered Prompt | N/A | `Ctrl+y` (global, all modes) |
 
 All changes are auto-saved when exiting the editor (pressing `Esc` in Vim Normal mode).
