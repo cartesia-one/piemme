@@ -12,7 +12,6 @@
   - `nucleo` (fuzzy search)
   - `pulldown-cmark` (markdown parsing)
   - `serde`, `serde_yaml`, `serde_json` (serialization)
-  - `notify` (file watching)
   - `uuid` (unique IDs)
   - `chrono` (timestamps)
   - `directories` (platform paths)
@@ -493,22 +492,6 @@
 
 ---
 
-## Phase 18: File Watching
-
-### 18.1 Watch Setup
-- [ ] Initialize file watcher on `.piemme/`
-- [ ] Watch for file changes
-- [ ] Watch for file additions
-- [ ] Watch for file deletions
-
-### 18.2 Change Handling
-- [ ] Detect external modifications
-- [ ] Prompt for reload if file changed
-- [ ] Auto-refresh prompt list
-- [ ] Update index on changes
-
----
-
 ## Phase 19: Testing
 
 ### 19.1 Unit Tests
@@ -596,10 +579,9 @@
 | 15 | Help System | 5 |
 | 16 | Popup Components | 7 |
 | 17 | Error Handling | 11 |
-| 18 | File Watching | 6 |
-| 19 | Testing | 10 |
-| 20 | Polish | 9 |
-| 21 | Release | 9 |
+| 18 | Testing | 10 |
+| 19 | Polish | 9 |
+| 20 | Release | 9 |
 | **Total** | | **~200 tasks** |
 
 ---
@@ -611,8 +593,8 @@
 3. **Prompt Engine**: Phases 5, 8, 9 (highlighting, clipboard, preview)
 4. **Organization**: Phases 10, 11, 12 (archive, folders, tags)
 5. **Search & Export**: Phases 13, 14 (fuzzy search, export)
-6. **Polish**: Phases 15-18 (help, popups, errors, file watching)
-7. **Quality**: Phases 19-21 (testing, optimization, release)
+6. **Polish**: Phases 15-17 (help, popups, errors)
+7. **Quality**: Phases 18-20 (testing, optimization, release)
 
 ---
 
@@ -627,7 +609,7 @@ For a first working version, prioritize:
 5. ✅ Phase 5: Syntax highlighting (basic)
 6. ✅ Phase 15: Help overlay
 
-**MVP excludes**: Archive, folders, tags, fuzzy search, export, file watching, preview mode
+**MVP excludes**: Archive, folders, tags, fuzzy search, export, preview mode
 
 Add these features incrementally after MVP is stable.
 

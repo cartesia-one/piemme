@@ -18,7 +18,6 @@ Piemme is a terminal-based user interface (TUI) application for managing, organi
 | Fuzzy Search | `nucleo` | Fast fuzzy matching |
 | Markdown | `pulldown-cmark` | Parsing for syntax highlighting |
 | Serialization | `serde` + `serde_yaml` | YAML frontmatter handling |
-| File Watching | `notify` | External file change detection |
 | UUID | `uuid` | Unique prompt identifiers |
 
 ---
@@ -586,7 +585,6 @@ Displayed in status bar:
 ### File Operations
 - Show error notification for failed reads/writes
 - Auto-save with backup before overwrite
-- Detect external file changes and prompt for reload
 
 ### Invalid References
 - Highlight in red
@@ -621,7 +619,6 @@ Displayed in status bar:
 - Lazy loading of prompt content
 - Debounced search input
 - Efficient re-rendering (only changed components)
-- File watcher for external changes
 
 ---
 

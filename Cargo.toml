@@ -29,9 +29,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"
 
-# File Watching
-notify = "7.0"
-
 # UUID
 uuid = { version = "1.11", features = ["v4", "serde"] }
 
@@ -44,9 +41,6 @@ directories = "5.0"
 # Error handling
 anyhow = "1.0"
 thiserror = "2.0"
-
-# Tokio for async (needed for file watching)
-tokio = { version = "1.42", features = ["full"] }
 
 # Regex for pattern matching
 regex = "1.11"
