@@ -77,6 +77,9 @@ echo ""
 CURRENT=0
 FAILED=0
 
+# Change to gifs directory so relative Output paths in tapes resolve correctly
+cd "$SCRIPT_DIR"
+
 for tape in "$TAPES_DIR"/*.tape; do
     CURRENT=$((CURRENT + 1))
     TAPE_NAME=$(basename "$tape" .tape)
