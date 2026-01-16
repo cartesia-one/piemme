@@ -1,9 +1,5 @@
 # piemme
 
-vibecoded vibecoding prompt manager for vibecoders
-
----
-
 Every project has its quirks. Every AI workflow needs its own prompts. Stop copying prompts between chat windows—**store them alongside your code**, version control them with git, and build complex prompt chains with a single keystroke.
 
 Piemme is a blazingly fast TUI prompt manager built in Rust. Your prompts live as simple Markdown files in a `.piemme/` folder—future-proof, portable, and yours forever. No cloud, no lock-in, no nonsense.
