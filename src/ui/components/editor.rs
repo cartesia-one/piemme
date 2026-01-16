@@ -224,16 +224,29 @@ fn highlight_line<'a>(line: &'a str, existing_prompts: &[&str]) -> Line<'a> {
             && line_bytes[current_pos + 1] == b'['
         {
             if let Some(end) = find_closing_brackets(line, current_pos + 2) {
-                let ref_name = &line[current_pos + 2..end];
+                let content = &line[current_pos + 2..end];
                 let full_ref = &line[current_pos..end + 2];
 
-                let is_valid = existing_prompts.contains(&ref_name);
-                let color = if is_valid { Color::Green } else { Color::Red };
+                // Check if it's a file reference
+                if content.starts_with("file:") {
+                    let file_path = &content[5..]; // Remove "file:" prefix
+                    let is_valid = std::path::Path::new(file_path).exists();
+                    let color = if is_valid { Color::Green } else { Color::Red };
 
-                spans.push(Span::styled(
-                    full_ref.to_string(),
-                    Style::default().fg(color).add_modifier(Modifier::BOLD),
-                ));
+                    spans.push(Span::styled(
+                        full_ref.to_string(),
+                        Style::default().fg(color).add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    // Regular prompt reference
+                    let is_valid = existing_prompts.contains(&content);
+                    let color = if is_valid { Color::Green } else { Color::Red };
+
+                    spans.push(Span::styled(
+                        full_ref.to_string(),
+                        Style::default().fg(color).add_modifier(Modifier::BOLD),
+                    ));
+                }
 
                 current_pos = end + 2;
                 continue;

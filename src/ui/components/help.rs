@@ -168,6 +168,8 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
                 key_binding("V", "Visual line mode"),
                 key_binding("Shift+Arrows", "Extend selection (hybrid)"),
                 key_binding("Ctrl+a", "Select all"),
+                key_binding("r / Ctrl+r", "Insert reference [[...]]"),
+                key_binding("Ctrl+f", "Insert file [[file:...]]"),
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Editor - Insert Mode", Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
@@ -181,7 +183,8 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
                 key_binding("Ctrl+c", "Copy selection"),
                 key_binding("Ctrl+v", "Paste"),
                 key_binding("Shift+Arrows", "Extend selection"),
-                key_binding("Ctrl+r", "Insert reference"),
+                key_binding("Ctrl+r", "Insert reference [[...]]"),
+                key_binding("Ctrl+f", "Insert file [[file:...]]"),
             ]);
         }
         Mode::Archive => {

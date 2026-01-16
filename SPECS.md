@@ -325,6 +325,7 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `V` | Enter Visual Line mode |
 | `Shift+Arrow` | Extend selection (hybrid) |
 | `r` / `Ctrl+r` | Open reference insertion popup |
+| `Ctrl+f` | Open file picker popup |
 | `?` | Open help |
 
 **Note on Vim Operators:**
@@ -353,6 +354,7 @@ Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 | `Ctrl+c` | Copy selected text to system clipboard |
 | `Ctrl+v` | Paste from system clipboard |
 | `Ctrl+r` | Open reference insertion popup |
+| `Ctrl+f` | Open file picker popup |
 | `Shift+Arrow` | Extend text selection (hybrid) |
 | (typing) | Insert text normally |
 
@@ -415,6 +417,17 @@ When pressing `Ctrl+r` in Insert mode:
 - Type to filter the list
 - Use `↑`/`↓` to navigate
 - Press `Enter` to insert `[[selected_prompt]]` at cursor position
+- Press `Esc` to cancel
+
+### File Picker Popup
+
+When pressing `Ctrl+f` in Insert mode:
+- A fuzzy finder popup appears with files from current directory
+- Files are listed recursively (up to 3 levels deep)
+- Hidden directories and build artifacts (`.git`, `target`, `node_modules`, etc.) are excluded
+- Type to filter by file path
+- Use `↑`/`↓` to navigate
+- Press `Enter` to insert `[[file:path/to/file]]` at cursor position
 - Press `Esc` to cancel
 
 ---
@@ -484,13 +497,23 @@ All changes are auto-saved when exiting the editor (pressing `Esc` in Vim Normal
 
 ### Reference Resolution (`[[]]`)
 
-Prompts can include references to other prompts using `[[prompt_name]]` syntax.
+Prompts can include references to other prompts or local files.
 
-**Behavior:**
+**Prompt References:**
+- Use `[[prompt_name]]` syntax to reference other prompts
 - References are resolved **only when copying** to clipboard
 - In editor, references display with syntax highlighting
 - Valid references: green
 - Invalid references: red
+
+**File References:**
+- Use `[[file:path/to/file]]` syntax to embed file content
+- Files are resolved **only when copying** to clipboard  
+- File paths are relative to current working directory
+- In editor, file references display with syntax highlighting
+- Valid files (exist and readable): green
+- Invalid files (missing or unreadable): red
+- On error, replaced with comment: `<!-- [FILE ERROR: path - error message] -->`
 
 **Example:**
 ```markdown
@@ -498,9 +521,17 @@ Prompts can include references to other prompts using `[[prompt_name]]` syntax.
 Please review this code:
 [[code_review]]
 
+Source file:
+[[file:src/main.rs]]
+
 # After copy (clipboard content):
 Please review this code:
 You are an expert code reviewer. Analyze the following code...
+
+Source file:
+fn main() {
+    println!("Hello, world!");
+}
 ```
 
 ### Circular Reference Protection
