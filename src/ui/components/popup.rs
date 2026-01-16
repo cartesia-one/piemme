@@ -177,7 +177,7 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 /// Render the rename popup with validation
 pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupState) {
     let config = PopupConfig::new("Rename Prompt")
-        .with_size(50, 20)
+        .with_size(50, 50)
         .with_border_color(if state.is_valid { Color::Cyan } else { Color::Red });
 
     let popup_area = centered_rect(config.width_percent, config.height_percent, area);
@@ -200,7 +200,7 @@ pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupSta
         .constraints([
             Constraint::Length(1),  // Label
             Constraint::Length(3),  // Input box
-            Constraint::Length(2),  // Error/status
+            Constraint::Length(1),  // Error/status
             Constraint::Min(1),     // Hints
         ])
         .margin(1)
@@ -210,13 +210,7 @@ pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupSta
     let label = Paragraph::new("Enter new name:");
     frame.render_widget(label, chunks[0]);
 
-    // Input box
-    let input_style = if state.is_valid {
-        Style::default().fg(Color::White)
-    } else {
-        Style::default().fg(Color::Red)
-    };
-
+    // Input box - exactly like tag selector which works
     let input_block = Block::default()
         .borders(Borders::ALL)
         .border_style(if state.is_valid {
@@ -226,7 +220,7 @@ pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupSta
         });
 
     let input_text = Paragraph::new(format!("{}_", state.input))
-        .style(input_style)
+        .style(Style::default().fg(Color::White))
         .block(input_block);
     frame.render_widget(input_text, chunks[1]);
 
@@ -241,16 +235,10 @@ pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupSta
     frame.render_widget(status, chunks[2]);
 
     // Hints
-    let hints = Paragraph::new(vec![
-        Line::from(Span::styled(
-            "Enter: confirm | Esc: cancel",
-            Style::default().fg(Color::DarkGray),
-        )),
-        Line::from(Span::styled(
-            "Valid: a-z, 0-9, _ (no leading/trailing _)",
-            Style::default().fg(Color::DarkGray),
-        )),
-    ]);
+    let hints = Paragraph::new(Span::styled(
+        "Enter: confirm | Esc: cancel | Valid: a-z, 0-9, _",
+        Style::default().fg(Color::DarkGray),
+    ));
     frame.render_widget(hints, chunks[3]);
 }
 

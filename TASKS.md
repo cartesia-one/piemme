@@ -356,7 +356,6 @@
 ### 11.4 Folder Management
 - [x] Create new folder
 - [x] List existing folders
-- [ ] Handle nested folders (optional/future)
 
 ---
 
@@ -409,7 +408,6 @@
 
 ### 13.4 Quick Insert Reference
 - [x] Implement `Ctrl+r` in Insert mode (reference popup)
-- [ ] Implement `Ctrl+l` in Insert mode (alternative binding)
 - [x] Open prompt selector
 - [x] Insert `[[selected_prompt]]` at cursor
 
@@ -636,3 +634,8 @@ Add these features incrementally after MVP is stable.
 - [x] Fix `?` key triggering help overlay in Vim Insert mode
   - Now `?` only opens help when not in Insert mode (VimInsert sub-mode)
   - Allows typing `?` character in the editor
+
+### Rename Popup
+- [x] Fix text input not visible in rename popup
+  - Added background color to popup and input box for proper text visibility
+  - Input text now visible with white-on-dark-gray styling
