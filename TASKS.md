@@ -457,6 +457,7 @@
 
 ### 17.2 Edge Cases
 - [x] Empty prompt list
+- [x] Handle incomplete `[[` or `{{` patterns without closing brackets/braces (prevents infinite loop)
 
 ---
 

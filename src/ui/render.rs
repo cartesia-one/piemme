@@ -272,6 +272,11 @@ fn highlight_line<'a>(line: &'a str, existing_prompts: &[&str]) -> Line<'a> {
                 
                 current_pos = end + 2;
                 continue;
+            } else {
+                // No closing ]] found - treat [[ as regular text
+                spans.push(Span::raw("[[".to_string()));
+                current_pos += 2;
+                continue;
             }
         }
 
@@ -294,6 +299,11 @@ fn highlight_line<'a>(line: &'a str, existing_prompts: &[&str]) -> Line<'a> {
                 ));
                 
                 current_pos = end + 2;
+                continue;
+            } else {
+                // No closing }} found - treat {{ as regular text
+                spans.push(Span::raw("{{".to_string()));
+                current_pos += 2;
                 continue;
             }
         }
