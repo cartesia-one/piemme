@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use super::commands::{execute_command_safe, find_commands, has_commands};
-use super::references::{find_references, has_references};
+use super::references::{find_file_references, find_references, has_file_references, has_references, read_file_content};
 
 /// Options for resolving prompt content
 pub struct ResolveOptions {
@@ -31,6 +31,8 @@ pub struct ResolveResult {
     pub commands: Vec<String>,
     /// References that were resolved
     pub references: Vec<String>,
+    /// File references that were resolved
+    pub file_references: Vec<String>,
     /// Whether there were circular references
     pub had_circular_refs: bool,
     /// Whether max depth was exceeded
@@ -47,11 +49,15 @@ where
         content: content.to_string(),
         commands: Vec::new(),
         references: Vec::new(),
+        file_references: Vec::new(),
         had_circular_refs: false,
         max_depth_exceeded: false,
     };
 
-    // Resolve references
+    // Resolve file references first
+    result.content = resolve_file_references(&result.content, &mut result.file_references);
+
+    // Resolve prompt references
     result.content = resolve_references_recursive(
         &result.content,
         &get_content,
@@ -154,9 +160,36 @@ pub fn resolve_commands_in_content(content: &str) -> String {
     result
 }
 
+/// Resolve file references in content
+fn resolve_file_references(content: &str, resolved_files: &mut Vec<String>) -> String {
+    if !has_file_references(content) {
+        return content.to_string();
+    }
+
+    let file_refs = find_file_references(content);
+    let mut result = content.to_string();
+
+    // Process in reverse order to maintain correct positions
+    for file_ref in file_refs.into_iter().rev() {
+        match read_file_content(&file_ref.path) {
+            Ok(file_content) => {
+                resolved_files.push(file_ref.path.clone());
+                result = result.replace(&file_ref.full_match, &file_content);
+            }
+            Err(e) => {
+                // On error, replace with an error comment
+                let error_msg = format!("<!-- [FILE ERROR: {} - {}] -->", file_ref.path, e);
+                result = result.replace(&file_ref.full_match, &error_msg);
+            }
+        }
+    }
+
+    result
+}
+
 /// Check if content needs resolution (has references or commands)
 pub fn needs_resolution(content: &str) -> bool {
-    has_references(content) || has_commands(content)
+    has_references(content) || has_commands(content) || has_file_references(content)
 }
 
 #[cfg(test)]
@@ -213,6 +246,33 @@ mod tests {
         assert!(needs_resolution("Has [[reference]]"));
         assert!(needs_resolution("Has {{command}}"));
         assert!(needs_resolution("Has [[ref]] and {{cmd}}"));
+        assert!(needs_resolution("Has [[file:test.txt]]"));
         assert!(!needs_resolution("Plain text"));
+    }
+
+    #[test]
+    fn test_file_reference_resolution() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        // Create a temporary directory and file
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.txt");
+        fs::write(&file_path, "Hello from file!").unwrap();
+
+        let content = format!("Content: [[file:{}]]", file_path.display());
+        let result = resolve_prompt(&content, |_| None, false);
+
+        assert_eq!(result.content, "Content: Hello from file!");
+        assert!(result.file_references.contains(&file_path.display().to_string()));
+    }
+
+    #[test]
+    fn test_missing_file_reference() {
+        let content = "Content: [[file:/nonexistent/file.txt]]";
+        let result = resolve_prompt(content, |_| None, false);
+
+        assert!(result.content.contains("FILE ERROR"));
+        assert!(result.content.contains("/nonexistent/file.txt"));
     }
 }
