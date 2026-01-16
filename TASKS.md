@@ -451,7 +451,7 @@
 
 ### 17.1 Error Handling
 - [x] Handle file not found
-- [ ] Handle permission denied
+- [x] Handle permission denied
 - [x] Handle corrupted YAML frontmatter
 - [x] Display user-friendly error messages
 
@@ -483,13 +483,13 @@
 ## Phase 21: Release Preparation
 
 ### 21.1 Build & Distribution
-- [ ] Set up release build profile
-- [ ] Create GitHub Actions CI/CD
-- [ ] Build for Linux
-- [ ] Build for macOS
-- [ ] Build for Windows
-- [ ] Create release binaries
+- [x] Set up release build profile
+- [x] Create GitHub Actions CI/CD
+- [x] Build for Linux
+- [x] Build for macOS
+- [x] Build for Windows
+- [x] Create release binaries
 
 ### 21.2 Installation
-- [ ] Create install script (usable via piping in bash like curl https://github.... | bash)
-- [ ] Document manual installation
+- [x] Create install script (usable via piping in bash like curl https://github.... | bash)
+- [x] Document manual installation

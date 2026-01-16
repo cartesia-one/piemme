@@ -1,9 +1,37 @@
 //! Directory management
 
 use anyhow::{Context, Result};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use crate::config::{archive_dir, folders_dir, piemme_dir, prompts_dir};
+
+/// Provide user-friendly error messages for I/O errors
+fn format_io_error(err: &std::io::Error, path: &Path, operation: &str) -> String {
+    match err.kind() {
+        ErrorKind::PermissionDenied => {
+            format!(
+                "Permission denied: Cannot {} '{}'. Check directory permissions.",
+                operation,
+                path.display()
+            )
+        }
+        ErrorKind::NotFound => {
+            format!("Directory not found: '{}'", path.display())
+        }
+        ErrorKind::AlreadyExists => {
+            format!("Directory already exists: '{}'", path.display())
+        }
+        _ => {
+            format!(
+                "Failed to {} '{}': {}",
+                operation,
+                path.display(),
+                err
+            )
+        }
+    }
+}
 
 /// Ensure all required directories exist
 pub fn ensure_directories() -> Result<()> {
@@ -16,7 +44,7 @@ pub fn ensure_directories() -> Result<()> {
 
     for dir in dirs {
         std::fs::create_dir_all(&dir)
-            .with_context(|| format!("Failed to create directory: {}", dir.display()))?;
+            .map_err(|e| anyhow::anyhow!(format_io_error(&e, &dir, "create")))?;
     }
 
     Ok(())
@@ -33,7 +61,7 @@ pub fn list_folders() -> Result<Vec<String>> {
     let mut folders = Vec::new();
 
     for entry in std::fs::read_dir(&folders_path)
-        .with_context(|| format!("Failed to read folders directory: {}", folders_path.display()))?
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, &folders_path, "read")))?
     {
         let entry = entry?;
         let path = entry.path();
@@ -54,7 +82,7 @@ pub fn create_folder(name: &str) -> Result<PathBuf> {
     let folder_path = folders_dir()?.join(name);
     
     std::fs::create_dir_all(&folder_path)
-        .with_context(|| format!("Failed to create folder: {}", folder_path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, &folder_path, "create")))?;
     
     Ok(folder_path)
 }
@@ -66,7 +94,7 @@ pub fn is_directory_empty(path: &Path) -> Result<bool> {
     }
     
     let mut entries = std::fs::read_dir(path)
-        .with_context(|| format!("Failed to read directory: {}", path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, path, "read")))?;
     
     Ok(entries.next().is_none())
 }
@@ -80,7 +108,7 @@ pub fn list_markdown_files(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
 
     for entry in std::fs::read_dir(dir)
-        .with_context(|| format!("Failed to read directory: {}", dir.display()))?
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, dir, "read")))?
     {
         let entry = entry?;
         let path = entry.path();

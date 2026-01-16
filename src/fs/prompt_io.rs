@@ -1,15 +1,49 @@
 //! Prompt file I/O operations
 
 use anyhow::{Context, Result};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use crate::config::{archive_dir, folders_dir, prompts_dir};
 use crate::models::prompt::{generate_name_from_content, make_unique_name, Prompt, PromptFrontmatter};
 
+/// Provide user-friendly error messages for I/O errors
+fn format_io_error(err: &std::io::Error, path: &Path, operation: &str) -> String {
+    match err.kind() {
+        ErrorKind::PermissionDenied => {
+            format!(
+                "Permission denied: Cannot {} '{}'. Check file/directory permissions.",
+                operation,
+                path.display()
+            )
+        }
+        ErrorKind::NotFound => {
+            format!("File not found: '{}'", path.display())
+        }
+        ErrorKind::AlreadyExists => {
+            format!("File already exists: '{}'", path.display())
+        }
+        ErrorKind::InvalidInput => {
+            format!("Invalid file name or path: '{}'", path.display())
+        }
+        ErrorKind::StorageFull | ErrorKind::QuotaExceeded => {
+            format!("Disk full: Cannot {} '{}'", operation, path.display())
+        }
+        _ => {
+            format!(
+                "Failed to {} '{}': {}",
+                operation,
+                path.display(),
+                err
+            )
+        }
+    }
+}
+
 /// Load a prompt from a markdown file
 pub fn load_prompt(path: &Path) -> Result<Prompt> {
     let content = std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to read prompt file: {}", path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, path, "read")))?;
 
     let (frontmatter, body) = parse_frontmatter(&content)?;
 
@@ -41,10 +75,10 @@ pub fn save_prompt(prompt: &Prompt, dir: &Path) -> Result<PathBuf> {
 
     // Ensure directory exists
     std::fs::create_dir_all(dir)
-        .with_context(|| format!("Failed to create directory: {}", dir.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, dir, "create directory")))?;
 
     std::fs::write(&path, file_content)
-        .with_context(|| format!("Failed to write prompt file: {}", path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, &path, "write")))?;
 
     Ok(path)
 }
@@ -76,7 +110,7 @@ pub fn delete_prompt(name: &str, dir: &Path) -> Result<()> {
     
     if path.exists() {
         std::fs::remove_file(&path)
-            .with_context(|| format!("Failed to delete prompt file: {}", path.display()))?;
+            .map_err(|e| anyhow::anyhow!(format_io_error(&e, &path, "delete")))?;
     }
     
     Ok(())
@@ -89,10 +123,10 @@ pub fn move_prompt(name: &str, from_dir: &Path, to_dir: &Path) -> Result<PathBuf
 
     // Ensure destination directory exists
     std::fs::create_dir_all(to_dir)
-        .with_context(|| format!("Failed to create directory: {}", to_dir.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, to_dir, "create directory")))?;
 
     std::fs::rename(&from_path, &to_path)
-        .with_context(|| format!("Failed to move prompt from {} to {}", from_path.display(), to_path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, &from_path, "move")))?;
 
     Ok(to_path)
 }
@@ -107,7 +141,7 @@ pub fn rename_prompt(old_name: &str, new_name: &str, dir: &Path) -> Result<PathB
     }
 
     std::fs::rename(&old_path, &new_path)
-        .with_context(|| format!("Failed to rename prompt from {} to {}", old_path.display(), new_path.display()))?;
+        .map_err(|e| anyhow::anyhow!(format_io_error(&e, &old_path, "rename")))?;
 
     Ok(new_path)
 }

@@ -1,6 +1,6 @@
-# Piemme 🗂️
+# piemme
 
-A terminal-based user interface (TUI) application for managing, organizing, and composing reusable prompts with vim-like keybindings.
+vibecoded vibecoding prompt manager for vibecoders
 
 ## Demo
 
@@ -34,7 +34,34 @@ A terminal-based user interface (TUI) application for managing, organizing, and 
 
 ## Installation
 
+### Quick Install (Linux/macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/piemme/main/install.sh | bash
+```
+
+### Download Binary
+
+Download the latest release for your platform from the [Releases](https://github.com/yourusername/piemme/releases) page:
+
+| Platform | Download |
+|----------|----------|
+| Linux (x86_64) | `piemme-linux-x86_64` |
+| Linux (ARM64) | `piemme-linux-aarch64` |
+| macOS (Intel) | `piemme-macos-x86_64` |
+| macOS (Apple Silicon) | `piemme-macos-aarch64` |
+| Windows (x86_64) | `piemme-windows-x86_64.exe` |
+
+After downloading, make the binary executable (Linux/macOS):
+
+```bash
+chmod +x piemme-*
+mv piemme-* ~/.local/bin/piemme
+```
+
 ### From Source
+
+Requires Rust 1.85+ (edition 2024)
 
 ```bash
 git clone https://github.com/yourusername/piemme.git
@@ -43,6 +70,12 @@ cargo build --release
 ```
 
 The binary will be available at `target/release/piemme`.
+
+### Cargo Install
+
+```bash
+cargo install --git https://github.com/yourusername/piemme.git
+```
 
 ## Usage
 
