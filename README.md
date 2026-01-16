@@ -2,13 +2,29 @@
 
 vibecoded vibecoding prompt manager for vibecoders
 
+---
+
+Every project has its quirks. Every AI workflow needs its own prompts. Stop copying prompts between chat windows—**store them alongside your code**, version control them with git, and build complex prompt chains with a single keystroke.
+
+Piemme is a blazingly fast TUI prompt manager built in Rust. Your prompts live as simple Markdown files in a `.piemme/` folder—future-proof, portable, and yours forever. No cloud, no lock-in, no nonsense.
+
+## Why Piemme?
+
+- **Project-local prompts**: Each project gets its own `.piemme/` folder. Your prompts live with your code and travel with it.
+- **Version control friendly**: Plain Markdown files with YAML frontmatter. `git diff` your prompts, review them in PRs, branch them.
+- **References**: Build complex, hierarchical prompts with `[[other_prompt]]` syntax. Compose, reuse, stay DRY.
+- **Dynamic commands**: Embed shell output with `{{ls -la}}` or `{{git status}}`—your prompts adapt to your context.
+- **Vim-native**: Modal editing, `hjkl` navigation, operators (`d`, `c`, `y`), motions—if you know Vim, you're home.
+- **Fast & reliable**: Rust-powered, instant startup, no runtime dependencies.
+- **100% local**: Everything stays on your machine. No accounts, no telemetry, no surprises.
+
 ## Demo
 
 | Navigation & UI | Create & Edit |
 |:---:|:---:|
 | ![Navigation](gifs/output/01-navigation.gif) | ![Create Edit](gifs/output/02-create-edit.gif) |
 
-| References Power | Commands Power |
+| References | Commands |
 |:---:|:---:|
 | ![References](gifs/output/03-references.gif) | ![Commands](gifs/output/04-commands.gif) |
 
@@ -20,146 +36,111 @@ vibecoded vibecoding prompt manager for vibecoders
 |:---:|
 | ![Search](gifs/output/07-search-actions.gif) |
 
-## Features
-
-- **Vim-like Navigation**: Navigate with `j`/`k`, go to first/last with `g`/`G`
-- **Prompt Management**: Create, edit, delete, and archive prompts
-- **Reference System**: Include other prompts with `[[prompt_name]]` syntax
-- **Command Execution**: Embed shell commands with `{{command}}` syntax
-- **Safe Mode**: Confirmation before executing embedded commands
-- **Tag System**: Organize prompts with colored tags
-- **Folder Organization**: Group related prompts in folders
-- **Syntax Highlighting**: Visual indicators for references and commands
-- **Clipboard Integration**: Copy rendered or raw prompts to clipboard
-
 ## Installation
 
 ### Quick Install (Linux/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/piemme/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/cartesia-one/piemme/main/install.sh | bash
 ```
 
 ### Download Binary
 
-Download the latest release for your platform from the [Releases](https://github.com/yourusername/piemme/releases) page:
+Grab the latest release from [Releases](https://github.com/cartesia-one/piemme/releases):
 
-| Platform | Download |
-|----------|----------|
-| Linux (x86_64) | `piemme-linux-x86_64` |
-| Linux (ARM64) | `piemme-linux-aarch64` |
-| macOS (Intel) | `piemme-macos-x86_64` |
-| macOS (Apple Silicon) | `piemme-macos-aarch64` |
-| Windows (x86_64) | `piemme-windows-x86_64.exe` |
-
-After downloading, make the binary executable (Linux/macOS):
+| Platform | Binary |
+|----------|--------|
+| Linux x86_64 | `piemme-linux-x86_64` |
+| Linux ARM64 | `piemme-linux-aarch64` |
+| macOS Intel | `piemme-macos-x86_64` |
+| macOS Apple Silicon | `piemme-macos-aarch64` |
+| Windows x86_64 | `piemme-windows-x86_64.exe` |
 
 ```bash
-chmod +x piemme-*
-mv piemme-* ~/.local/bin/piemme
+chmod +x piemme-* && mv piemme-* ~/.local/bin/piemme
 ```
 
 ### From Source
 
-Requires Rust 1.85+ (edition 2024)
-
 ```bash
-git clone https://github.com/yourusername/piemme.git
-cd piemme
-cargo build --release
+git clone https://github.com/cartesia-one/piemme.git
+cd piemme && cargo build --release
+# Binary at target/release/piemme
 ```
-
-The binary will be available at `target/release/piemme`.
 
 ### Cargo Install
 
 ```bash
-cargo install --git https://github.com/yourusername/piemme.git
+cargo install --git https://github.com/cartesia-one/piemme.git
 ```
 
-## Usage
+## Quick Start
 
 ```bash
-# Run in any directory - piemme creates a .piemme folder
-piemme
+cd your-project
+piemme  # Creates .piemme/ folder automatically
 ```
 
-### Keybindings
+Press `n` to create your first prompt. Start typing. Press `Esc` to save and return to the list. Press `y` to copy the rendered prompt to your clipboard. Paste it into your AI chat.
 
-#### Normal Mode
+## Keybindings
+
+### Navigation
 
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `g` | Go to first |
-| `G` | Go to last |
-| `Enter` / `i` | Enter insert mode |
+| `j` / `k` | Move down / up |
+| `g` / `G` | Jump to first / last |
+| `/` | Fuzzy search |
+| `Ctrl+p` | Quick open |
+
+### Prompts
+
+| Key | Action |
+|-----|--------|
+| `Enter` / `i` | Edit prompt |
 | `n` | New prompt |
-| `d` | Delete prompt |
-| `a` | Archive prompt |
-| `A` | Open archive |
+| `r` | Rename |
+| `d` | Delete |
+| `Ctrl+d` | Duplicate |
 | `y` | Copy rendered to clipboard |
-| `p` | Preview mode |
-| `t` | Tag selector |
-| `!` | Toggle safe mode |
-| `?` | Help |
-| `q` | Quit |
+| `p` | Preview resolved content |
 
-#### Insert Mode
+### Organization
 
 | Key | Action |
 |-----|--------|
-| `Esc` | Exit (save) |
-| `Ctrl+s` | Save |
-| `Ctrl+z` | Undo |
-| `Ctrl+y` | Redo |
+| `t` | Manage tags |
+| `[` / `]` | Cycle tag filter |
+| `O` | Open folder |
+| `M` | Move to folder |
+| `a` / `A` | Archive / View archive |
 
-## Prompt Format
+### Editor (Vim-style)
 
-Prompts are stored as Markdown files with YAML frontmatter:
+| Key | Action |
+|-----|--------|
+| `i` / `a` / `o` | Insert / Append / Open line |
+| `Esc` | Save & exit (from Normal) |
+| `dd` / `cc` / `yy` | Delete / Change / Yank line |
+| `dw` / `cw` / `yw` | Delete / Change / Yank word |
+| `u` / `Ctrl+r` | Undo / Redo |
+| `Ctrl+r` | Insert reference `[[...]]` |
+| `v` / `V` | Visual / Visual Line mode |
 
-```markdown
----
-id: "550e8400-e29b-41d4-a716-446655440000"
-tags: ["coding", "python"]
-created: "2026-01-15T10:30:00Z"
-modified: "2026-01-15T14:22:00Z"
----
-Your prompt content here...
-
-Include another prompt: [[other_prompt_name]]
-
-Include command output: {{ls -la}}
-```
-
-## Directory Structure
-
-```
-.piemme/
-├── config.yaml          # User preferences
-├── prompts/             # Main prompts
-├── archive/             # Archived prompts
-├── folders/             # Organized folders
-└── .index.json          # Search index
-```
+Press `?` anytime for full keybinding help.
 
 ## Configuration
 
 Edit `.piemme/config.yaml`:
 
 ```yaml
-safe_mode: true
+safe_mode: true  # Confirm before running {{commands}}
 tag_colors:
-  coding: "blue"
-  writing: "green"
-  work: "yellow"
-default_export_format: "rendered"
+  coding: blue
+  writing: green
+  work: yellow
 ```
-
-## Development Status
-
-This project is under active development. See [TASKS.md](TASKS.md) for the roadmap.
 
 ## License
 
