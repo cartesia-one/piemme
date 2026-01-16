@@ -65,10 +65,8 @@ where
         max_depth_exceeded: false,
     };
 
-    // Resolve file references first (they don't have circular dependency issues)
-    result.content = resolve_file_references(&result.content, base_dir, &mut result.file_references);
-
-    // Resolve prompt references
+    // Resolve both prompt references and file references recursively
+    // File references are resolved at each level of recursion
     result.content = resolve_references_recursive(
         &result.content,
         &get_content,
@@ -76,6 +74,8 @@ where
         0,
         10,
         &mut result.references,
+        &mut result.file_references,
+        base_dir,
         &mut result.had_circular_refs,
         &mut result.max_depth_exceeded,
     );
@@ -135,6 +135,8 @@ fn resolve_references_recursive<F>(
     depth: usize,
     max_depth: usize,
     resolved_refs: &mut Vec<String>,
+    resolved_files: &mut Vec<String>,
+    base_dir: &Path,
     had_circular: &mut bool,
     max_exceeded: &mut bool,
 ) -> String
@@ -146,12 +148,21 @@ where
         return content.to_string();
     }
 
-    if !has_references(content) {
+    if !has_references(content) && !has_file_references(content) {
         return content.to_string();
     }
 
-    let refs = find_references(content);
     let mut result = content.to_string();
+
+    // Resolve file references at this level
+    result = resolve_file_references(&result, base_dir, resolved_files);
+
+    // Now resolve prompt references
+    if !has_references(&result) {
+        return result;
+    }
+
+    let refs = find_references(&result);
 
     // Process references in reverse order to maintain correct positions
     for reference in refs.into_iter().rev() {
@@ -167,7 +178,7 @@ where
             visited.insert(reference.name.clone());
             resolved_refs.push(reference.name.clone());
 
-            // Recursively resolve the referenced content
+            // Recursively resolve the referenced content (including any file references it may have)
             let resolved_content = resolve_references_recursive(
                 &ref_content,
                 get_content,
@@ -175,6 +186,8 @@ where
                 depth + 1,
                 max_depth,
                 resolved_refs,
+                resolved_files,
+                base_dir,
                 had_circular,
                 max_exceeded,
             );
