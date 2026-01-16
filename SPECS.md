@@ -172,6 +172,8 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 |---------|-------|-------------|
 | `[[valid_ref]]` | Green | Valid reference to existing prompt |
 | `[[invalid_ref]]` | Red | Reference to non-existent prompt |
+| `[[file:valid_path]]` | Green | Valid file reference (file exists) |
+| `[[file:invalid_path]]` | Red | Invalid file reference (file not found) |
 | `{{command}}` | Yellow/Orange | Shell command (warning color) |
 | Tags | Per-tag color | Configurable in config.yaml |
 | Selection | Inverted | Selected text in editor |
@@ -325,6 +327,7 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `V` | Enter Visual Line mode |
 | `Shift+Arrow` | Extend selection (hybrid) |
 | `r` / `Ctrl+r` | Open reference insertion popup |
+| `Ctrl+f` | Open file picker popup for `[[file:...]]` insertion |
 | `?` | Open help |
 
 **Note on Vim Operators:**
@@ -353,6 +356,7 @@ Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 | `Ctrl+c` | Copy selected text to system clipboard |
 | `Ctrl+v` | Paste from system clipboard |
 | `Ctrl+r` | Open reference insertion popup |
+| `Ctrl+f` | Open file picker popup for `[[file:...]]` insertion |
 | `Shift+Arrow` | Extend text selection (hybrid) |
 | (typing) | Insert text normally |
 
@@ -415,6 +419,16 @@ When pressing `Ctrl+r` in Insert mode:
 - Type to filter the list
 - Use `↑`/`↓` to navigate
 - Press `Enter` to insert `[[selected_prompt]]` at cursor position
+- Press `Esc` to cancel
+
+### File Picker Popup
+
+When pressing `Ctrl+f` in Insert mode:
+- A fuzzy finder popup appears listing files in the current directory
+- Hidden files and common ignore patterns (node_modules, target, etc.) are excluded
+- Type to filter the file list
+- Use `↑`/`↓` to navigate
+- Press `Enter` to insert `[[file:selected_path]]` at cursor position
 - Press `Esc` to cancel
 
 ---
@@ -508,6 +522,46 @@ You are an expert code reviewer. Analyze the following code...
 - Maximum resolution depth: 10 levels
 - If circular reference detected: stop resolution, include warning comment
 - Example output: `<!-- [CIRCULAR REFERENCE DETECTED: prompt_name] -->`
+
+### File Reference Resolution (`[[file:]]`)
+
+Prompts can reference local files using `[[file:path/to/file]]` syntax, providing code context without manual copy-pasting.
+
+**Syntax:**
+- `[[file:src/main.rs]]` - References a file relative to the current directory
+- `[[file:path/to/file.txt]]` - Supports any text file
+
+**Behavior:**
+- File references are resolved **only when copying** to clipboard
+- The entire file content replaces the `[[file:...]]` tag
+- In editor, valid file references display in green, invalid in red
+- If file doesn't exist: `<!-- [FILE NOT FOUND: path/to/file] -->`
+- If file can't be read: `<!-- [FILE READ ERROR: path/to/file - reason] -->`
+
+**Example:**
+```markdown
+# In editor:
+Please review this code:
+[[file:src/main.rs]]
+
+# After copy (clipboard content):
+Please review this code:
+fn main() {
+    println!("Hello, world!");
+}
+```
+
+**File Picker (Ctrl+f):**
+- Press `Ctrl+f` in the editor to open a fuzzy finder popup
+- Lists all files in the current directory (excluding hidden files and common ignore patterns)
+- Type to filter files
+- Press `Enter` to insert `[[file:selected_file]]` at cursor
+- Press `Esc` to cancel
+
+**Ignored Directories:**
+The file picker automatically skips:
+- Hidden files/directories (starting with `.`)
+- `node_modules`, `target`, `dist`, `build`, `__pycache__`, `venv`, `.venv`
 
 ### Command Execution (`{{}}`)
 

@@ -53,6 +53,8 @@ pub struct AppState {
     pub folder_selector: Option<FolderSelectorState>,
     /// Search popup state
     pub search_popup: Option<SearchPopupState>,
+    /// File picker popup state (for [[file:...]] insertion)
+    pub file_picker: Option<FilePickerPopupState>,
     /// Editor sub-mode (Vim Normal/Insert/Visual)
     pub editor_mode: EditorMode,
     /// Visual mode anchor position (row, col) for selection start
@@ -91,6 +93,7 @@ impl AppState {
             tag_selector: None,
             folder_selector: None,
             search_popup: None,
+            file_picker: None,
             editor_mode: EditorMode::VimNormal,
             visual_anchor: None,
             yank_buffer: String::new(),
@@ -587,6 +590,134 @@ impl TagSelectorState {
         self.new_tag_input.clear();
         self.update_filter();
         Some(tag)
+    }
+}
+
+/// State for the file picker popup (for [[file:...]] insertion)
+#[derive(Debug, Clone)]
+pub struct FilePickerPopupState {
+    /// Search/filter input
+    pub filter: String,
+    /// Selected index in filtered results
+    pub selected_index: usize,
+    /// All available files in the current directory
+    pub all_files: Vec<String>,
+    /// Filtered file paths (cached)
+    pub filtered_files: Vec<String>,
+    /// Base directory for file listing (current working directory)
+    pub base_dir: std::path::PathBuf,
+    /// Scroll offset for results list
+    pub scroll_offset: usize,
+}
+
+impl FilePickerPopupState {
+    pub fn new(base_dir: std::path::PathBuf) -> Self {
+        let all_files = Self::scan_files(&base_dir);
+        let filtered_files = all_files.clone();
+        Self {
+            filter: String::new(),
+            selected_index: 0,
+            all_files,
+            filtered_files,
+            base_dir,
+            scroll_offset: 0,
+        }
+    }
+
+    /// Scan all files recursively in the directory (excluding hidden files/dirs)
+    fn scan_files(base_dir: &std::path::Path) -> Vec<String> {
+        let mut files = Vec::new();
+        Self::scan_files_recursive(base_dir, base_dir, &mut files);
+        files.sort();
+        files
+    }
+
+    fn scan_files_recursive(base_dir: &std::path::Path, current_dir: &std::path::Path, files: &mut Vec<String>) {
+        let Ok(entries) = std::fs::read_dir(current_dir) else {
+            return;
+        };
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            
+            // Skip hidden files and directories
+            if file_name.starts_with('.') {
+                continue;
+            }
+
+            if path.is_dir() {
+                // Skip common directories that should be ignored
+                let skip_dirs = ["node_modules", "target", "dist", "build", "__pycache__", ".git", "venv", ".venv"];
+                if !skip_dirs.contains(&file_name) {
+                    Self::scan_files_recursive(base_dir, &path, files);
+                }
+            } else if path.is_file() {
+                // Get relative path from base_dir
+                if let Ok(rel_path) = path.strip_prefix(base_dir) {
+                    if let Some(rel_str) = rel_path.to_str() {
+                        files.push(rel_str.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    /// Update the filter and refresh filtered results
+    pub fn update_filter(&mut self) {
+        if self.filter.is_empty() {
+            self.filtered_files = self.all_files.clone();
+        } else {
+            let filter_lower = self.filter.to_lowercase();
+            self.filtered_files = self.all_files
+                .iter()
+                .filter(|path| path.to_lowercase().contains(&filter_lower))
+                .cloned()
+                .collect();
+        }
+        // Reset selection if out of bounds
+        if self.selected_index >= self.filtered_files.len() {
+            self.selected_index = 0;
+        }
+        self.scroll_offset = 0;
+    }
+
+    /// Get the currently selected file path
+    pub fn selected_file(&self) -> Option<&str> {
+        self.filtered_files.get(self.selected_index).map(|s| s.as_str())
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.filtered_files.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.filtered_files.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.filtered_files.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.filtered_files.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+
+    /// Update scroll offset to keep selection visible
+    pub fn ensure_visible(&mut self, visible_height: usize) {
+        if visible_height == 0 || self.filtered_files.is_empty() {
+            return;
+        }
+
+        if self.selected_index < self.scroll_offset {
+            self.scroll_offset = self.selected_index;
+        }
+        
+        if self.selected_index >= self.scroll_offset + visible_height {
+            self.scroll_offset = self.selected_index - visible_height + 1;
+        }
     }
 }
 

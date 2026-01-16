@@ -9,6 +9,7 @@ Piemme is a blazingly fast TUI prompt manager built in Rust. Your prompts live a
 - **Project-local prompts**: Each project gets its own `.piemme/` folder. Your prompts live with your code and travel with it.
 - **Version control friendly**: Plain Markdown files with YAML frontmatter. `git diff` your prompts, review them in PRs, branch them.
 - **References**: Build complex, hierarchical prompts with `[[other_prompt]]` syntax. Compose, reuse, stay DRY.
+- **File References**: Include local file content with `[[file:path/to/file]]`. Provide code context without copy-pasting.
 - **Dynamic commands**: Embed shell output with `{{ls -la}}` or `{{git status}}`—your prompts adapt to your context.
 - **Vim-native**: Modal editing, `hjkl` navigation, operators (`d`, `c`, `y`), motions—if you know Vim, you're home.
 - **Fast & reliable**: Rust-powered, instant startup, no runtime dependencies.
@@ -134,6 +135,7 @@ Press `n` to create your first prompt. Start typing. Press `Esc` to save and ret
 | `dw` / `cw` / `yw` | Delete / Change / Yank word |
 | `u` / `Ctrl+r` | Undo / Redo |
 | `Ctrl+r` | Insert reference `[[...]]` |
+| `Ctrl+f` | Insert file reference `[[file:...]]` |
 | `v` / `V` | Visual / Visual Line mode |
 
 Press `?` anytime for full keybinding help.

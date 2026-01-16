@@ -1,9 +1,10 @@
 //! Prompt content resolution (references and commands)
 
 use std::collections::HashSet;
+use std::path::Path;
 
 use super::commands::{execute_command_safe, find_commands, has_commands};
-use super::references::{find_references, has_references};
+use super::references::{find_references, find_file_references, has_references, has_file_references};
 
 /// Options for resolving prompt content
 pub struct ResolveOptions {
@@ -31,6 +32,8 @@ pub struct ResolveResult {
     pub commands: Vec<String>,
     /// References that were resolved
     pub references: Vec<String>,
+    /// File references that were resolved
+    pub file_references: Vec<String>,
     /// Whether there were circular references
     pub had_circular_refs: bool,
     /// Whether max depth was exceeded
@@ -42,16 +45,30 @@ pub fn resolve_prompt<F>(content: &str, get_content: F, execute_cmds: bool) -> R
 where
     F: Fn(&str) -> Option<String>,
 {
+    // Use current working directory as base for file references
+    let base_dir = std::env::current_dir().unwrap_or_default();
+    resolve_prompt_with_base(content, get_content, execute_cmds, &base_dir)
+}
+
+/// Resolve a prompt's content with a specific base directory for file references
+pub fn resolve_prompt_with_base<F>(content: &str, get_content: F, execute_cmds: bool, base_dir: &Path) -> ResolveResult
+where
+    F: Fn(&str) -> Option<String>,
+{
     let mut visited = HashSet::new();
     let mut result = ResolveResult {
         content: content.to_string(),
         commands: Vec::new(),
         references: Vec::new(),
+        file_references: Vec::new(),
         had_circular_refs: false,
         max_depth_exceeded: false,
     };
 
-    // Resolve references
+    // Resolve file references first (they don't have circular dependency issues)
+    result.content = resolve_file_references(&result.content, base_dir, &mut result.file_references);
+
+    // Resolve prompt references
     result.content = resolve_references_recursive(
         &result.content,
         &get_content,
@@ -70,6 +87,41 @@ where
     // Execute commands if requested
     if execute_cmds {
         result.content = resolve_commands_in_content(&result.content);
+    }
+
+    result
+}
+
+/// Resolve file references in content by reading file contents
+fn resolve_file_references(content: &str, base_dir: &Path, resolved_files: &mut Vec<String>) -> String {
+    if !has_file_references(content) {
+        return content.to_string();
+    }
+
+    let file_refs = find_file_references(content);
+    let mut result = content.to_string();
+
+    // Process file references in reverse order to maintain correct positions
+    for file_ref in file_refs.into_iter().rev() {
+        let file_path = base_dir.join(&file_ref.path);
+        
+        if file_path.exists() && file_path.is_file() {
+            match std::fs::read_to_string(&file_path) {
+                Ok(file_content) => {
+                    resolved_files.push(file_ref.path.clone());
+                    result = result.replace(&file_ref.full_match, &file_content);
+                }
+                Err(e) => {
+                    // If we can't read the file, replace with an error comment
+                    let error_msg = format!("<!-- [FILE READ ERROR: {} - {}] -->", file_ref.path, e);
+                    result = result.replace(&file_ref.full_match, &error_msg);
+                }
+            }
+        } else {
+            // File doesn't exist, replace with an error comment
+            let error_msg = format!("<!-- [FILE NOT FOUND: {}] -->", file_ref.path);
+            result = result.replace(&file_ref.full_match, &error_msg);
+        }
     }
 
     result
@@ -154,9 +206,9 @@ pub fn resolve_commands_in_content(content: &str) -> String {
     result
 }
 
-/// Check if content needs resolution (has references or commands)
+/// Check if content needs resolution (has references, file references, or commands)
 pub fn needs_resolution(content: &str) -> bool {
-    has_references(content) || has_commands(content)
+    has_references(content) || has_file_references(content) || has_commands(content)
 }
 
 #[cfg(test)]

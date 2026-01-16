@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::models::{FolderSelectorState, ReferencePopupState, RenamePopupState, SearchPopupState, TagSelectorState};
+use crate::models::{FilePickerPopupState, FolderSelectorState, ReferencePopupState, RenamePopupState, SearchPopupState, TagSelectorState};
 
 /// Configuration for a popup
 pub struct PopupConfig {
@@ -312,6 +312,91 @@ pub fn render_reference_popup(frame: &mut Frame, area: Rect, state: &ReferencePo
         .block(
             Block::default()
                 .title(format!(" Results ({}) ", state.filtered_names.len()))
+                .borders(Borders::ALL),
+        );
+    frame.render_widget(list, chunks[1]);
+
+    // Hints
+    let hints = Paragraph::new(Span::styled(
+        "↑↓: navigate | Enter: insert | Esc: cancel",
+        Style::default().fg(Color::DarkGray),
+    ));
+    frame.render_widget(hints, chunks[2]);
+}
+
+/// Render the file picker popup (fuzzy finder for files)
+pub fn render_file_picker_popup(frame: &mut Frame, area: Rect, state: &FilePickerPopupState) {
+    let config = PopupConfig::new("Insert File Reference [[file:path]]")
+        .with_size(70, 60)
+        .with_border_color(Color::Green);
+
+    let popup_area = centered_rect(config.width_percent, config.height_percent, area);
+
+    // Clear the background
+    frame.render_widget(Clear, popup_area);
+
+    // Create layout for filter input and list
+    let block = Block::default()
+        .title(format!(" {} ", config.title))
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(config.border_color));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),  // Filter input
+            Constraint::Min(3),     // Results list
+            Constraint::Length(1),  // Hints
+        ])
+        .margin(1)
+        .split(inner);
+
+    // Filter input
+    let filter_block = Block::default()
+        .title(" Filter ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+
+    let filter_text = if state.filter.is_empty() {
+        Paragraph::new("Type to filter files...")
+            .style(Style::default().fg(Color::DarkGray))
+            .block(filter_block)
+    } else {
+        Paragraph::new(format!("{}_", state.filter))
+            .style(Style::default().fg(Color::White))
+            .block(filter_block)
+    };
+    frame.render_widget(filter_text, chunks[0]);
+
+    // Results list
+    let visible_height = chunks[1].height.saturating_sub(2) as usize; // Account for borders
+    let items: Vec<ListItem> = state
+        .filtered_files
+        .iter()
+        .enumerate()
+        .skip(state.scroll_offset)
+        .take(visible_height)
+        .map(|(i, path)| {
+            let style = if i == state.selected_index {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Green)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::White)
+            };
+            ListItem::new(Line::from(Span::styled(path.clone(), style)))
+        })
+        .collect();
+
+    let list = List::new(items)
+        .block(
+            Block::default()
+                .title(format!(" Files ({}) ", state.filtered_files.len()))
                 .borders(Borders::ALL),
         );
     frame.render_widget(list, chunks[1]);

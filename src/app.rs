@@ -7,7 +7,7 @@ use tui_textarea::{CursorMove, TextArea};
 
 use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, load_all_prompts_everywhere, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, SearchPopupState, SearchResult, TagSelectorState, VimOperator};
+use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FilePickerPopupState, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, SearchPopupState, SearchResult, TagSelectorState, VimOperator};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
@@ -256,6 +256,37 @@ impl<'a> App<'a> {
                                 Action::None => {
                                     // Handle text input for filter
                                     self.handle_reference_popup_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
+                        // Handle file picker popup input
+                        if self.state.file_picker.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmFilePicker => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CancelFilePicker => {
+                                    self.state.file_picker = None;
+                                }
+                                Action::FilePickerUp => {
+                                    if let Some(ref mut popup) = self.state.file_picker {
+                                        popup.select_previous();
+                                        popup.ensure_visible(15);
+                                    }
+                                }
+                                Action::FilePickerDown => {
+                                    if let Some(ref mut popup) = self.state.file_picker {
+                                        popup.select_next();
+                                        popup.ensure_visible(15);
+                                    }
+                                }
+                                Action::None => {
+                                    // Handle text input for filter
+                                    self.handle_file_picker_input(key);
                                 }
                                 _ => {}
                             }
@@ -570,6 +601,24 @@ impl<'a> App<'a> {
                 // Handled in run loop
             }
 
+            // File picker popup actions
+            Action::OpenFilePicker => {
+                self.open_file_picker();
+            }
+
+            Action::ConfirmFilePicker => {
+                self.confirm_file_picker_popup()?;
+            }
+
+            Action::CancelFilePicker => {
+                self.state.file_picker = None;
+            }
+
+            // File picker navigation (handled in run loop, but just in case)
+            Action::FilePickerUp | Action::FilePickerDown => {
+                // Handled in run loop
+            }
+
             // Duplicate prompt
             Action::DuplicatePrompt => {
                 self.duplicate_current_prompt()?;
@@ -787,6 +836,10 @@ impl<'a> App<'a> {
             }
             Action::OpenReferencePopup => {
                 self.open_reference_popup();
+                return Ok(());
+            }
+            Action::OpenFilePicker => {
+                self.open_file_picker();
                 return Ok(());
             }
             Action::QuickInsertReference => {
@@ -1942,6 +1995,64 @@ impl<'a> App<'a> {
         }
 
         self.state.notify(format!("Inserted [[{}]]", selected_name), NotificationLevel::Success);
+
+        Ok(())
+    }
+
+    /// Open the file picker popup (for Ctrl+f in insert mode)
+    fn open_file_picker(&mut self) {
+        // Only allow file picker popup in Insert mode (editor is active)
+        if self.state.mode != Mode::Insert {
+            return;
+        }
+
+        // Use current working directory as base
+        let base_dir = std::env::current_dir().unwrap_or_default();
+        let popup = FilePickerPopupState::new(base_dir);
+        self.state.file_picker = Some(popup);
+    }
+
+    /// Handle text input in file picker popup
+    fn handle_file_picker_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        if let Some(ref mut popup) = self.state.file_picker {
+            match key.code {
+                KeyCode::Char(c) => {
+                    popup.filter.push(c);
+                    popup.update_filter();
+                }
+                KeyCode::Backspace => {
+                    popup.filter.pop();
+                    popup.update_filter();
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Confirm file selection and insert into editor
+    fn confirm_file_picker_popup(&mut self) -> Result<()> {
+        let popup = match self.state.file_picker.take() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        let selected_file = match popup.selected_file() {
+            Some(path) => path.to_string(),
+            None => {
+                self.state.notify("No file selected", NotificationLevel::Warning);
+                return Ok(());
+            }
+        };
+
+        // Insert the file reference into the editor
+        if let Some(ref mut editor) = self.editor {
+            let reference = format!("[[file:{}]]", selected_file);
+            editor.insert_str(&reference);
+        }
+
+        self.state.notify(format!("Inserted [[file:{}]]", selected_file), NotificationLevel::Success);
 
         Ok(())
     }

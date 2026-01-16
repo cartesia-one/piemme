@@ -13,7 +13,7 @@ use crate::config::Config;
 use crate::models::AppState;
 
 use super::components::{
-    render_confirm_dialog, render_folder_selector, render_help_overlay, render_prompt_list,
+    render_confirm_dialog, render_file_picker_popup, render_folder_selector, render_help_overlay, render_prompt_list,
     render_reference_popup, render_rename_popup, render_search_popup, render_status_bar,
     render_tag_selector, render_title_bar,
 };
@@ -101,6 +101,11 @@ pub fn render(
     // Render search popup if active
     if let Some(search_state) = &state.search_popup {
         render_search_popup(frame, size, search_state);
+    }
+
+    // Render file picker popup if active
+    if let Some(file_picker_state) = &state.file_picker {
+        render_file_picker_popup(frame, size, file_picker_state);
     }
 }
 
