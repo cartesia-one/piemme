@@ -6,7 +6,7 @@ use std::time::Duration;
 use tui_textarea::{CursorMove, TextArea};
 
 use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
-use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
+use crate::fs::{ensure_directories, load_all_prompts, load_all_prompts_everywhere, save_prompt, delete_prompt, Index, IndexEntry};
 use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, SearchPopupState, SearchResult, TagSelectorState, VimOperator};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
@@ -150,10 +150,12 @@ impl<'a> App<'a> {
         let mut state = AppState::new();
         state.safe_mode = config.safe_mode;
 
-        // Load prompts
+        // Load prompts for initial view (main prompts directory)
         let prompts = load_all_prompts(&prompts_dir()?)?;
-        let all_prompts = prompts.clone();
         state.prompts = prompts;
+        
+        // Load ALL prompts from all locations (for reference resolution across folders)
+        let all_prompts = load_all_prompts_everywhere()?;
 
         // Count archived prompts
         let archived_count = load_all_prompts(&archive_dir()?)?.len();
@@ -190,6 +192,7 @@ impl<'a> App<'a> {
                     &self.config,
                     self.archived_count,
                     self.editor.as_ref(),
+                    &self.all_prompts,
                 );
             })?;
 
@@ -1592,9 +1595,9 @@ impl<'a> App<'a> {
     fn copy_to_clipboard(&mut self, resolve: bool) -> Result<()> {
         if let Some(prompt) = self.state.selected_prompt() {
             if resolve {
-                // Resolve references first (always safe)
+                // Resolve references using ALL prompts (across all folders)
                 let get_content = |name: &str| -> Option<String> {
-                    self.state.prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
+                    self.all_prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
                 };
                 
                 // Resolve references but don't execute commands yet
@@ -1737,10 +1740,12 @@ impl<'a> App<'a> {
     /// Reload prompts from disk
     fn reload_prompts(&mut self) -> Result<()> {
         let prompts = load_all_prompts(&prompts_dir()?)?;
-        self.all_prompts = prompts.clone();
         self.state.prompts = prompts;
         self.state.current_folder = None;
         self.state.tag_filter = None;  // Reset filter when reloading
+        
+        // Reload ALL prompts from all locations (for reference resolution)
+        self.all_prompts = load_all_prompts_everywhere()?;
         
         // Re-collect all tags
         let mut all_tags: Vec<String> = self.all_prompts

@@ -18,6 +18,8 @@ use super::components::{
     render_tag_selector, render_title_bar,
 };
 
+use crate::models::Prompt;
+
 /// Render the entire application
 pub fn render(
     frame: &mut Frame,
@@ -25,6 +27,7 @@ pub fn render(
     config: &Config,
     archived_count: usize,
     editor: Option<&TextArea>,
+    all_prompts: &[Prompt],
 ) {
     let size = frame.area();
 
@@ -54,7 +57,7 @@ pub fn render(
     render_prompt_list(frame, content_chunks[0], state, config);
 
     // Render editor/viewer
-    render_editor(frame, content_chunks[1], state, config, editor);
+    render_editor(frame, content_chunks[1], state, config, editor, all_prompts);
 
     // Render status bar
     render_status_bar(frame, main_chunks[2], state, archived_count);
@@ -108,6 +111,7 @@ fn render_editor(
     state: &AppState,
     config: &Config,
     editor: Option<&TextArea>,
+    all_prompts: &[Prompt],
 ) {
     let border_style = if state.editor_focused {
         Style::default().fg(Color::Cyan)
@@ -115,8 +119,8 @@ fn render_editor(
         Style::default().fg(Color::DarkGray)
     };
 
-    // Collect all prompt names for reference validation
-    let prompt_names: Vec<&str> = state.prompts.iter().map(|p| p.name.as_str()).collect();
+    // Collect all prompt names for reference validation (from all_prompts for cross-folder references)
+    let prompt_names: Vec<&str> = all_prompts.iter().map(|p| p.name.as_str()).collect();
 
     // If in Insert mode and we have an editor, render the textarea
     if state.mode == crate::models::Mode::Insert {
@@ -188,9 +192,9 @@ fn render_editor(
         
         // In Preview mode, resolve references and commands
         if state.mode == crate::models::Mode::Preview {
-            // Create a closure to get prompt content by name
+            // Create a closure to get prompt content by name (using ALL prompts for cross-folder references)
             let get_content = |name: &str| -> Option<String> {
-                state.prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
+                all_prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
             };
             
             // Resolve the content (without executing commands in preview for safety)

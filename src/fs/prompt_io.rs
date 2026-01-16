@@ -179,6 +179,32 @@ pub fn create_new_prompt(content: &str, existing_names: &[&str]) -> Prompt {
     prompt
 }
 
+/// Load all prompts from all directories (main, archive, and folders)
+/// This is used for reference resolution across all prompts
+pub fn load_all_prompts_everywhere() -> Result<Vec<crate::models::Prompt>> {
+    let mut prompts = Vec::new();
+
+    // Main prompts directory
+    prompts.extend(load_all_prompts(&prompts_dir()?)?);
+
+    // Folders
+    let folders_path = folders_dir()?;
+    if folders_path.exists() {
+        for entry in std::fs::read_dir(&folders_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                prompts.extend(load_all_prompts(&path)?);
+            }
+        }
+    }
+
+    // Sort by name
+    prompts.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(prompts)
+}
+
 /// Get all prompt names across all directories (for uniqueness checking)
 pub fn get_all_prompt_names() -> Result<Vec<String>> {
     let mut names = Vec::new();
