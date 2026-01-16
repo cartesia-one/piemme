@@ -271,7 +271,14 @@ fn highlight_line<'a>(line: &'a str, existing_prompts: &[&str]) -> Line<'a> {
                 let full_ref = &line[current_pos..end + 2];
                 
                 // Determine if reference is valid
-                let is_valid = existing_prompts.contains(&ref_name);
+                let is_valid = if ref_name.starts_with("file:") {
+                    // For file references, check if the file exists
+                    let file_path = &ref_name[5..]; // Strip "file:" prefix
+                    std::path::Path::new(file_path).exists()
+                } else {
+                    // For prompt references, check against existing prompts
+                    existing_prompts.contains(&ref_name)
+                };
                 let color = if is_valid { Color::Green } else { Color::Red };
                 
                 spans.push(Span::styled(
