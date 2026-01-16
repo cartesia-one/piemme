@@ -75,7 +75,6 @@ tag_colors:
   writing: "green"
   work: "yellow"
   personal: "magenta"
-default_export_format: "rendered"  # "rendered" or "raw"
 ```
 
 ---
@@ -260,7 +259,6 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | `]` | Filter by next tag |
 | `Tab` | Toggle focus between list and editor |
 | `!` | Toggle safe mode |
-| `e` | Export prompt |
 | `Ctrl+d` | Duplicate selected prompt |
 
 ### Insert Mode (Editor)
@@ -546,16 +544,6 @@ When typing `[[` in insert mode:
 - Results ranked by relevance
 - Shows matching snippet preview
 - `Enter` to jump to selected prompt
-
-### Export (`e`)
-
-Export dialog with options:
-1. **Copy Rendered** - Copy with all references/commands resolved
-2. **Copy Raw** - Copy original markdown without resolution
-3. **Save to File (Rendered)** - Save resolved content to external file
-4. **Save to File (Raw)** - Save original markdown to external file
-
-File export prompts for filename and location.
 
 ### Prompt Statistics
 

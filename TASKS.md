@@ -413,26 +413,6 @@
 
 ---
 
-## Phase 14: Export System
-
-### 14.1 Export Dialog
-- [ ] Implement `e` - open export dialog
-- [ ] Display export options
-
-### 14.2 Export Options
-- [x] Copy Rendered - clipboard with resolution
-- [x] Copy Raw - clipboard without resolution
-- [ ] Save to File (Rendered)
-- [ ] Save to File (Raw)
-
-### 14.3 File Export
-- [ ] Prompt for filename
-- [ ] Prompt for location (or use default)
-- [ ] Write content to file
-- [x] Show success/error notification
-
----
-
 ## Phase 15: Help System
 
 ### 15.1 Help Overlay
@@ -463,7 +443,6 @@
 
 ### 16.3 Notification System
 - [x] Implement notification display
-- [ ] Auto-dismiss after timeout
 - [x] Support success/error/warning types
 
 ---
