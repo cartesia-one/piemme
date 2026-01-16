@@ -28,6 +28,13 @@ if ! command -v vhs &> /dev/null; then
     exit 1
 fi
 
+# Build piemme first (release mode for better performance in demos)
+echo -e "${YELLOW}Building piemme in release mode...${NC}"
+cd "$PROJECT_DIR"
+cargo build --release
+echo -e "${GREEN}Build complete!${NC}"
+echo ""
+
 # Backup existing .piemme folder if it exists
 BACKUP_DIR=""
 if [ -d "$PROJECT_DIR/.piemme" ]; then
@@ -52,13 +59,6 @@ cleanup() {
 
 # Set trap to cleanup on exit (success or failure)
 trap cleanup EXIT
-
-# Build piemme first (release mode for better performance in demos)
-echo -e "${YELLOW}Building piemme in release mode...${NC}"
-cd "$PROJECT_DIR"
-cargo build --release
-echo -e "${GREEN}Build complete!${NC}"
-echo ""
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
