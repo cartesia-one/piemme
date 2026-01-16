@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Piemme Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/yourusername/piemme/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/cartesia-one/piemme/main/install.sh | bash
 #
 # Environment variables:
 #   PIEMME_INSTALL_DIR - Installation directory (default: ~/.local/bin)
@@ -18,7 +18,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO="yourusername/piemme"  # TODO: Update with actual repo
+REPO="cartesia-one/piemme"
 BINARY_NAME="piemme"
 INSTALL_DIR="${PIEMME_INSTALL_DIR:-$HOME/.local/bin}"
 
