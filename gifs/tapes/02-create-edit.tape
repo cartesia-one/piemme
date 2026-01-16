@@ -79,10 +79,6 @@ Sleep 600ms
 Type "u"
 Sleep 1000ms
 
-# Redo with Ctrl+r
-Ctrl+r
-Sleep 1000ms
-
 # Exit editor and save
 Escape
 Sleep 1200ms
