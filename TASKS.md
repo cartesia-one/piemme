@@ -258,6 +258,7 @@
 - [x] Implement `y` - copy to clipboard
 - [x] Copy raw content (no resolution)
 - [x] Show success notification
+- [x] Implement `Ctrl+y` - copy rendered prompt to clipboard (global, all modes)
 
 ### 8.2 Reference Resolution
 - [x] Parse all `[[...]]` references

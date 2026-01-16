@@ -231,6 +231,7 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | `?` | Open help overlay with all keybindings |
 | `Ctrl+c` | Quit application (with confirmation if unsaved) |
 | `q` | Quit application (with confirmation if unsaved) |
+| `Ctrl+y` | Copy rendered prompt to clipboard (overrides vim-style y) |
 | `Ctrl+l` | Increase left column width (Normal mode) |
 | `Ctrl+h` | Decrease left column width (Normal mode) |
 
@@ -324,6 +325,7 @@ The `d`, `c`, and `y` keys enter "operator-pending" mode, waiting for a motion:
 **Note on Yank/Paste:**
 Vim-style `y`/`p`/`P` operations use an internal buffer (not the system clipboard).
 Use `Ctrl+c`/`Ctrl+v` in Insert mode to interact with the system clipboard.
+Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 
 #### Editor - Vim Insert Mode
 
@@ -332,7 +334,6 @@ Use `Ctrl+c`/`Ctrl+v` in Insert mode to interact with the system clipboard.
 | `Esc` | Return to Vim Normal mode |
 | `Ctrl+s` | Save changes |
 | `Ctrl+z` | Undo |
-| `Ctrl+y` | Redo |
 | `Ctrl+a` | Select all text |
 | `Ctrl+c` | Copy selected text to system clipboard |
 | `Ctrl+v` | Paste from system clipboard |
@@ -453,10 +454,11 @@ The editor supports both Vim and traditional editing paradigms:
 |---------|-----------|-------------------|
 | Selection | `v` Visual mode + movements | `Shift+Arrow` keys |
 | Select All | (manual) | `Ctrl+a` |
-| Copy | `y` (yank) | `Ctrl+c` |
-| Paste | `p` (put) | `Ctrl+v` |
+| Copy | `y` (yank to internal buffer) | `Ctrl+c` (to system clipboard) |
+| Paste | `p` (put from internal buffer) | `Ctrl+v` (from system clipboard) |
 | Undo | `u` | `Ctrl+z` |
-| Redo | `Ctrl+r` | `Ctrl+y` |
+| Redo | `Ctrl+r` | `Ctrl+r` |
+| Copy Rendered Prompt | N/A | `Ctrl+y` (global, all modes) |
 
 All changes are auto-saved when exiting the editor (pressing `Esc` in Vim Normal mode).
 

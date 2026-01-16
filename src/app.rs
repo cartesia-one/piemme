@@ -751,6 +751,10 @@ impl<'a> App<'a> {
                 self.state.should_quit = true;
                 return Ok(());
             }
+            Action::CopyRendered => {
+                // Ctrl+y copies rendered prompt to clipboard from any mode
+                return self.copy_to_clipboard(true);
+            }
             _ => {}
         }
 

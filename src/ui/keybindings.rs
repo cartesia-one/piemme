@@ -44,6 +44,11 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
                 return Action::Quit;
             }
         }
+        KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            // Ctrl+y copies rendered prompt to clipboard in all modes
+            // (overrides vim-style y and Redo in Insert mode)
+            return Action::CopyRendered;
+        }
         KeyCode::Char('?') => {
             return Action::OpenHelp;
         }
@@ -231,8 +236,8 @@ fn handle_vim_insert_mode(key: KeyEvent) -> Action {
         KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Save,
         
         // Standard editor shortcuts that work in insert mode
+        // Note: Ctrl+y is handled globally for CopyRendered
         KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Undo,
-        KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
         KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CopySelection,
         KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Paste,
