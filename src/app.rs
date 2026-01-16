@@ -780,16 +780,15 @@ impl<'a> App<'a> {
                 
                 match operator {
                     VimOperator::Delete => {
-                        editor.copy();
+                        // cut() does both yank and delete in one operation
+                        editor.cut();
                         let yanked = editor.yank_text();
                         self.state.yank_buffer = yanked;
-                        editor.cut();
                     }
                     VimOperator::Change => {
-                        editor.copy();
+                        editor.cut();
                         let yanked = editor.yank_text();
                         self.state.yank_buffer = yanked;
-                        editor.cut();
                         self.state.editor_mode = EditorMode::VimInsert;
                         return Ok(());
                     }
@@ -797,7 +796,7 @@ impl<'a> App<'a> {
                         editor.copy();
                         let yanked = editor.yank_text();
                         self.state.yank_buffer = yanked;
-                        editor.cancel_selection();
+                        // copy() already cancels selection
                     }
                 }
                 
@@ -933,10 +932,9 @@ impl<'a> App<'a> {
             // Editing actions - use internal yank buffer
             Action::VimDeleteChar => {
                 if self.state.editor_mode.is_visual() {
-                    editor.copy();
+                    editor.cut();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked;
-                    editor.cut();
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
                 } else {
@@ -946,64 +944,88 @@ impl<'a> App<'a> {
             Action::VimDeleteToEnd => {
                 editor.start_selection();
                 editor.move_cursor(CursorMove::End);
-                editor.copy();
+                editor.cut();
                 let yanked = editor.yank_text();
                 self.state.yank_buffer = yanked;
-                editor.cut();
             }
             Action::VimDeleteLine => {
-                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
-                    editor.copy();
+                if self.state.editor_mode.is_visual() {
+                    // Visual mode - delete selection
+                    editor.cut();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked;
-                    editor.cut();
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
                 } else {
-                    // Delete entire line (dd)
-                    editor.move_cursor(CursorMove::Head);
-                    editor.start_selection();
-                    editor.move_cursor(CursorMove::Down);
-                    editor.copy();
-                    let yanked = editor.yank_text();
-                    self.state.yank_buffer = yanked;
-                    editor.cut();
+                    // Normal mode or operator-pending (dd) - delete entire line
+                    let (current_row, _) = editor.cursor();
+                    let total_lines = editor.lines().len();
+                    let is_last_line = current_row == total_lines.saturating_sub(1);
+                    
+                    if is_last_line && total_lines > 1 {
+                        // On last line with more than one line: go to end of previous line
+                        // and select through end of current line
+                        editor.move_cursor(CursorMove::Up);
+                        editor.move_cursor(CursorMove::End);
+                        editor.start_selection();
+                        editor.move_cursor(CursorMove::Down);
+                        editor.move_cursor(CursorMove::End);
+                        editor.cut();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked;
+                    } else if is_last_line && total_lines == 1 {
+                        // Only one line: select entire content
+                        editor.move_cursor(CursorMove::Head);
+                        editor.start_selection();
+                        editor.move_cursor(CursorMove::End);
+                        editor.cut();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked + "\n";
+                    } else {
+                        // Normal case: select from head through next line start
+                        editor.move_cursor(CursorMove::Head);
+                        editor.start_selection();
+                        editor.move_cursor(CursorMove::Down);
+                        editor.cut();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked;
+                    }
+                    self.state.editor_mode = EditorMode::VimNormal;
                 }
             }
             Action::VimChangeToEnd => {
                 editor.start_selection();
                 editor.move_cursor(CursorMove::End);
-                editor.copy();
+                editor.cut();
                 let yanked = editor.yank_text();
                 self.state.yank_buffer = yanked;
-                editor.cut();
                 self.state.editor_mode = EditorMode::VimInsert;
                 self.state.visual_anchor = None;
             }
             Action::VimChangeLine => {
-                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
-                    editor.copy();
+                if self.state.editor_mode.is_visual() {
+                    // Visual mode - change selection
+                    editor.cut();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked;
-                    editor.cut();
                     self.state.editor_mode = EditorMode::VimInsert;
                     self.state.visual_anchor = None;
                 } else {
-                    // Change entire line (cc) - but keep indentation
+                    // Normal mode or operator-pending (cc) - change entire line (but keep indentation)
                     editor.move_cursor(CursorMove::Head);
                     editor.start_selection();
                     editor.move_cursor(CursorMove::End);
-                    editor.copy();
+                    editor.cut();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked;
-                    editor.cut();
                     self.state.editor_mode = EditorMode::VimInsert;
                 }
             }
             
             // Yank actions - use internal yank buffer
             Action::VimYank => {
-                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
+                if self.state.editor_mode.is_visual() {
+                    // Visual mode - yank selection
                     editor.copy();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked;
@@ -1011,7 +1033,7 @@ impl<'a> App<'a> {
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
                 } else {
-                    // Yank entire line (yy)
+                    // Normal mode or operator-pending (yy) - yank entire line
                     let (row, col) = editor.cursor();
                     editor.move_cursor(CursorMove::Head);
                     editor.start_selection();
@@ -1019,8 +1041,9 @@ impl<'a> App<'a> {
                     editor.copy();
                     let yanked = editor.yank_text();
                     self.state.yank_buffer = yanked + "\n";
-                    editor.cancel_selection();
+                    // copy() already cancels selection
                     editor.move_cursor(CursorMove::Jump(row as u16, col as u16));
+                    self.state.editor_mode = EditorMode::VimNormal;
                 }
             }
             

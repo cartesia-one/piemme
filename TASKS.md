@@ -189,6 +189,7 @@
 - [x] Support `c0`/`c$` change to line boundaries
 - [x] Support `y0`/`y$` yank to line boundaries
 - [x] Support `dd`/`cc`/`yy` for full line operations
+- [x] Handle `dd` on last line edge case
 - [x] Support `{`/`}` paragraph movements in operator-pending mode
 - [x] Show operator-pending status in status bar (e.g., "d...", "c...", "y...")
 - [x] Escape cancels operator-pending mode
