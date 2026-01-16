@@ -10,6 +10,9 @@ use ratatui::{
 
 use crate::models::{FilePickerState, FolderSelectorState, ReferencePopupState, RenamePopupState, SearchPopupState, TagSelectorState};
 
+// Cursor indicator for input fields  
+const CURSOR_INDICATOR: &str = "_";
+
 /// Configuration for a popup
 pub struct PopupConfig {
     /// Title displayed at the top
@@ -219,7 +222,7 @@ pub fn render_rename_popup(frame: &mut Frame, area: Rect, state: &RenamePopupSta
             Style::default().fg(Color::Red)
         });
 
-    let input_text = Paragraph::new(format!("{}_", state.input))
+    let input_text = Paragraph::new(format!("{}{}", state.input, CURSOR_INDICATOR))
         .style(Style::default().fg(Color::White))
         .block(input_block);
     frame.render_widget(input_text, chunks[1]);
@@ -284,7 +287,7 @@ pub fn render_reference_popup(frame: &mut Frame, area: Rect, state: &ReferencePo
             .style(Style::default().fg(Color::DarkGray))
             .block(filter_block)
     } else {
-        Paragraph::new(format!("{}_", state.filter))
+        Paragraph::new(format!("{}{}", state.filter, CURSOR_INDICATOR))
             .style(Style::default().fg(Color::White))
             .block(filter_block)
     };
@@ -366,7 +369,7 @@ pub fn render_file_picker(frame: &mut Frame, area: Rect, state: &FilePickerState
             .style(Style::default().fg(Color::DarkGray))
             .block(filter_block)
     } else {
-        Paragraph::new(format!("{}_", state.filter))
+        Paragraph::new(format!("{}{}", state.filter, CURSOR_INDICATOR))
             .style(Style::default().fg(Color::White))
             .block(filter_block)
     };
@@ -376,6 +379,7 @@ pub fn render_file_picker(frame: &mut Frame, area: Rect, state: &FilePickerState
     let results_inner_height = chunks[1].height.saturating_sub(2) as usize; // Account for borders
 
     // Create items with scroll offset
+    // Note: enumerate() before skip() preserves absolute indices, so `i` matches state.selected_index
     let items: Vec<ListItem> = state
         .filtered_files
         .iter()
@@ -462,7 +466,7 @@ pub fn render_tag_selector(frame: &mut Frame, area: Rect, state: &TagSelectorSta
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow));
 
-        let input_text = Paragraph::new(format!("{}_", state.new_tag_input))
+        let input_text = Paragraph::new(format!("{}{}", state.new_tag_input, CURSOR_INDICATOR))
             .style(Style::default().fg(Color::White))
             .block(input_block);
         frame.render_widget(input_text, chunks[1]);
@@ -495,7 +499,7 @@ pub fn render_tag_selector(frame: &mut Frame, area: Rect, state: &TagSelectorSta
                 .style(Style::default().fg(Color::DarkGray))
                 .block(filter_block)
         } else {
-            Paragraph::new(format!("{}_", state.filter))
+            Paragraph::new(format!("{}{}", state.filter, CURSOR_INDICATOR))
                 .style(Style::default().fg(Color::White))
                 .block(filter_block)
         };
@@ -587,7 +591,7 @@ pub fn render_folder_selector(frame: &mut Frame, area: Rect, state: &FolderSelec
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Magenta));
 
-        let input_text = Paragraph::new(format!("{}_", state.new_folder_input))
+        let input_text = Paragraph::new(format!("{}{}", state.new_folder_input, CURSOR_INDICATOR))
             .style(Style::default().fg(Color::White))
             .block(input_block);
         frame.render_widget(input_text, chunks[1]);
@@ -620,7 +624,7 @@ pub fn render_folder_selector(frame: &mut Frame, area: Rect, state: &FolderSelec
                 .style(Style::default().fg(Color::DarkGray))
                 .block(filter_block)
         } else {
-            Paragraph::new(format!("{}_", state.filter))
+            Paragraph::new(format!("{}{}", state.filter, CURSOR_INDICATOR))
                 .style(Style::default().fg(Color::White))
                 .block(filter_block)
         };
@@ -705,7 +709,7 @@ pub fn render_search_popup(frame: &mut Frame, area: Rect, state: &SearchPopupSta
             .style(Style::default().fg(Color::DarkGray))
             .block(search_block)
     } else {
-        Paragraph::new(format!("{}_", state.query))
+        Paragraph::new(format!("{}{}", state.query, CURSOR_INDICATOR))
             .style(Style::default().fg(Color::White))
             .block(search_block)
     };
