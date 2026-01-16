@@ -45,8 +45,8 @@ pub fn render(
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(30),  // Prompt list
-            Constraint::Percentage(70),  // Editor
+            Constraint::Percentage(state.left_column_percent),  // Prompt list
+            Constraint::Percentage(100 - state.left_column_percent),  // Editor
         ])
         .split(main_chunks[1]);
 

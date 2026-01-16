@@ -113,7 +113,7 @@ Names must be unique across ALL prompts (main, archived, and in folders).
 ### Layout
 
 ```
-┌─ Piemme ─────────────────────────────────────────────────────────┐
+┌─ piemme ─────────────────────────────────────────────────────────┐
 │ 📁 /work                                     [🔒 Safe Mode: ON] │
 ├──────────────────┬───────────────────────────────────────────────┤
 │ Prompts (12)     │ # given_the_foll                              │
@@ -232,6 +232,8 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | `?` | Open help overlay with all keybindings |
 | `Ctrl+c` | Quit application (with confirmation if unsaved) |
 | `q` | Quit application (with confirmation if unsaved) |
+| `Ctrl+l` | Increase left column width (Normal mode) |
+| `Ctrl+h` | Decrease left column width (Normal mode) |
 
 ### Normal Mode
 
@@ -270,6 +272,7 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | Key | Action |
 |-----|--------|
 | `Esc` | Exit editor (save and return to Normal mode) |
+| `q` | Quit application (from Vim Normal mode) |
 | `i` | Enter Vim Insert mode (at cursor) |
 | `I` | Enter Vim Insert mode (at line start) |
 | `a` | Append after cursor |
@@ -306,8 +309,7 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `v` | Enter Visual mode (character-wise) |
 | `V` | Enter Visual Line mode |
 | `Shift+Arrow` | Extend selection (hybrid) |
-| `r` | Open reference insertion popup |
-| `Ctrl+r` | Open reference insertion popup (alternative) |
+| `r` / `Ctrl+r` | Open reference insertion popup |
 | `?` | Open help |
 
 **Note on Vim Operators:**

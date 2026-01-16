@@ -130,6 +130,10 @@ fn handle_normal_mode(key: KeyEvent, _state: &AppState) -> Action {
         KeyCode::Char('e') => Action::Export,
         KeyCode::Char('M') => Action::MoveToFolder,
         KeyCode::Char('q') => Action::Quit,
+        
+        // Column resize
+        KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::IncreaseLeftColumnWidth,
+        KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::DecreaseLeftColumnWidth,
 
         _ => Action::None,
     }
@@ -150,6 +154,8 @@ fn handle_vim_normal_mode(key: KeyEvent) -> Action {
     match key.code {
         // Exit editor entirely
         KeyCode::Esc => Action::ExitMode,
+        // Quit application from editor normal mode
+        KeyCode::Char('q') => Action::Quit,
         
         // Save
         KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Save,
@@ -203,10 +209,10 @@ fn handle_vim_normal_mode(key: KeyEvent) -> Action {
         
         // Undo/Redo
         KeyCode::Char('u') => Action::Undo,
-        KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
         
-        // Open reference popup (Ctrl+r also works for references in normal mode)
-        KeyCode::Char('r') if !key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
+        // Open reference popup (both r and Ctrl+r open reference popup)
+        KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
+        KeyCode::Char('r') => Action::OpenReferencePopup,
         
         // Help
         KeyCode::Char('?') => Action::OpenHelp,

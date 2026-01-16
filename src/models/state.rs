@@ -57,6 +57,8 @@ pub struct AppState {
     pub visual_anchor: Option<(usize, usize)>,
     /// Internal yank buffer for vim-style copy/paste (not system clipboard)
     pub yank_buffer: String,
+    /// Left column width percentage (0-100)
+    pub left_column_percent: u16,
 }
 
 impl AppState {
@@ -89,6 +91,7 @@ impl AppState {
             editor_mode: EditorMode::VimNormal,
             visual_anchor: None,
             yank_buffer: String::new(),
+            left_column_percent: 30,
         }
     }
 

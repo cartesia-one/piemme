@@ -537,7 +537,6 @@
 ### 20.1 Performance
 - [ ] Profile and optimize rendering
 - [ ] Optimize search indexing
-- [ ] Lazy load prompt content
 - [ ] Debounce search input
 
 ### 20.2 UX Polish
@@ -631,3 +630,17 @@ For a first working version, prioritize:
 **MVP excludes**: Archive, folders, tags, fuzzy search, export, file watching, preview mode
 
 Add these features incrementally after MVP is stable.
+
+---
+
+## Bonus Features (Implemented)
+
+### UI Improvements
+- [x] Change title to lowercase "piemme" for consistent branding
+- [x] Resizable left column width with `Ctrl+l` (increase) and `Ctrl+h` (decrease)
+  - Default: 30%, Min: 15%, Max: 70%, Step: 5%
+
+### Keybinding Improvements
+- [x] `q` quits application from editor Vim Normal mode (in addition to Normal mode)
+- [x] `r` and `Ctrl+r` both open reference insertion popup in editor Vim Normal mode
+  - Previously `Ctrl+r` was redo, now `r` and `Ctrl+r` are unified for references

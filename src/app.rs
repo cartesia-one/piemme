@@ -454,6 +454,14 @@ impl<'a> App<'a> {
             Action::ToggleFocus => {
                 self.state.editor_focused = !self.state.editor_focused;
             }
+            Action::IncreaseLeftColumnWidth => {
+                // Increase left column width by 5%, max 70%
+                self.state.left_column_percent = (self.state.left_column_percent + 5).min(70);
+            }
+            Action::DecreaseLeftColumnWidth => {
+                // Decrease left column width by 5%, min 15%
+                self.state.left_column_percent = self.state.left_column_percent.saturating_sub(5).max(15);
+            }
             Action::OpenHelp => {
                 self.state.show_help = !self.state.show_help;
                 // Reset scroll when opening help

@@ -94,6 +94,10 @@ pub enum Action {
     HelpScrollUp,
     /// Scroll help down
     HelpScrollDown,
+    /// Increase left column width
+    IncreaseLeftColumnWidth,
+    /// Decrease left column width
+    DecreaseLeftColumnWidth,
     /// Close current overlay/popup
     CloseOverlay,
     /// Toggle selection in confirmation dialog (Yes/No)

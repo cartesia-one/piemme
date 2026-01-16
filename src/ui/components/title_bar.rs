@@ -15,14 +15,14 @@ pub fn render_title_bar(frame: &mut Frame, area: Rect, state: &AppState) {
     // Different title styling for archive mode
     let (title_text, title_style) = if state.mode == crate::models::Mode::Archive {
         (
-            " Piemme - Archive ",
+            " piemme - archive ",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )
     } else {
         (
-            " Piemme ",
+            " piemme ",
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
