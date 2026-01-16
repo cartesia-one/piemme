@@ -638,7 +638,7 @@ Add these features incrementally after MVP is stable.
 ### UI Improvements
 - [x] Change title to lowercase "piemme" for consistent branding
 - [x] Resizable left column width with `Ctrl+l` (increase) and `Ctrl+h` (decrease)
-  - Default: 30%, Min: 15%, Max: 70%, Step: 5%
+  - Default: 15%, Min: 15%, Max: 70%, Step: 5%
 
 ### Keybinding Improvements
 - [x] `q` quits application from editor Vim Normal mode (in addition to Normal mode)

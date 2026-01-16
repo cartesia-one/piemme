@@ -91,7 +91,7 @@ impl AppState {
             editor_mode: EditorMode::VimNormal,
             visual_anchor: None,
             yank_buffer: String::new(),
-            left_column_percent: 30,
+            left_column_percent: 15,
         }
     }
 
