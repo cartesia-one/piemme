@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::models::{FolderSelectorState, ReferencePopupState, RenamePopupState, TagSelectorState};
+use crate::models::{FolderSelectorState, ReferencePopupState, RenamePopupState, SearchPopupState, TagSelectorState};
 
 /// Configuration for a popup
 pub struct PopupConfig {
@@ -576,6 +576,169 @@ pub fn render_folder_selector(frame: &mut Frame, area: Rect, state: &FolderSelec
         ));
         frame.render_widget(hints, chunks[2]);
     }
+}
+
+/// Render the search popup (fuzzy finder for prompts)
+pub fn render_search_popup(frame: &mut Frame, area: Rect, state: &SearchPopupState) {
+    let config = PopupConfig::new("Search Prompts")
+        .with_size(70, 60)
+        .with_border_color(Color::Green);
+
+    let popup_area = centered_rect(config.width_percent, config.height_percent, area);
+
+    // Clear the background
+    frame.render_widget(Clear, popup_area);
+
+    // Create layout for search input and results
+    let block = Block::default()
+        .title(format!(" {} ", config.title))
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(config.border_color));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),  // Search input
+            Constraint::Min(3),     // Results list
+            Constraint::Length(1),  // Hints
+        ])
+        .margin(1)
+        .split(inner);
+
+    // Search input
+    let search_block = Block::default()
+        .title(" Search ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+
+    let search_text = if state.query.is_empty() {
+        Paragraph::new("Type to search by name or content...")
+            .style(Style::default().fg(Color::DarkGray))
+            .block(search_block)
+    } else {
+        Paragraph::new(format!("{}_", state.query))
+            .style(Style::default().fg(Color::White))
+            .block(search_block)
+    };
+    frame.render_widget(search_text, chunks[0]);
+
+    // Results list - calculate visible height
+    let results_inner_height = chunks[1].height.saturating_sub(2) as usize; // Account for borders
+
+    // Create items with scroll offset
+    let items: Vec<ListItem> = state
+        .results
+        .iter()
+        .enumerate()
+        .skip(state.scroll_offset)
+        .take(results_inner_height)
+        .map(|(i, result)| {
+            let is_selected = i == state.selected_index;
+            
+            // Build the name with match highlights
+            let name_spans = build_highlighted_spans(&result.name, &result.name_match_indices, is_selected);
+            
+            // Build preview line
+            let preview_style = if is_selected {
+                Style::default().fg(Color::Black).bg(Color::Green)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            
+            // Truncate preview to fit
+            let preview = if result.preview.len() > 60 {
+                format!("  {}...", &result.preview[..57])
+            } else {
+                format!("  {}", result.preview)
+            };
+            
+            let content = vec![
+                Line::from(name_spans),
+                Line::from(Span::styled(preview, preview_style)),
+            ];
+            
+            ListItem::new(content)
+        })
+        .collect();
+
+    let results_title = if state.results.is_empty() {
+        if state.query.is_empty() {
+            " Results ".to_string()
+        } else {
+            " No matches ".to_string()
+        }
+    } else {
+        format!(" Results ({}) ", state.results.len())
+    };
+
+    let list = List::new(items)
+        .block(
+            Block::default()
+                .title(results_title)
+                .borders(Borders::ALL),
+        );
+    frame.render_widget(list, chunks[1]);
+
+    // Hints
+    let hints = Paragraph::new(Span::styled(
+        "↑↓: navigate | Enter: jump to prompt | Esc: cancel",
+        Style::default().fg(Color::DarkGray),
+    ));
+    frame.render_widget(hints, chunks[2]);
+}
+
+/// Build spans with highlighted matching characters
+fn build_highlighted_spans(text: &str, match_indices: &[usize], is_selected: bool) -> Vec<Span<'static>> {
+    let base_style = if is_selected {
+        Style::default().fg(Color::Black).bg(Color::Green)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    
+    let highlight_style = if is_selected {
+        Style::default()
+            .fg(Color::Yellow)
+            .bg(Color::Green)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+            .fg(Color::Green)
+            .add_modifier(Modifier::BOLD)
+    };
+    
+    let mut spans = Vec::new();
+    let mut last_idx = 0;
+    
+    for &idx in match_indices {
+        if idx >= text.len() {
+            continue;
+        }
+        
+        // Add non-matching text before this match
+        if idx > last_idx {
+            spans.push(Span::styled(text[last_idx..idx].to_string(), base_style));
+        }
+        
+        // Add the matching character
+        let end_idx = (idx + 1).min(text.len());
+        spans.push(Span::styled(text[idx..end_idx].to_string(), highlight_style));
+        last_idx = end_idx;
+    }
+    
+    // Add any remaining text
+    if last_idx < text.len() {
+        spans.push(Span::styled(text[last_idx..].to_string(), base_style));
+    }
+    
+    if spans.is_empty() {
+        spans.push(Span::styled(text.to_string(), base_style));
+    }
+    
+    spans
 }
 
 #[cfg(test)]

@@ -390,22 +390,22 @@
 ## Phase 13: Fuzzy Search
 
 ### 13.1 Search Infrastructure
-- [ ] Integrate nucleo fuzzy matcher
+- [x] Integrate nucleo fuzzy matcher
 - [x] Build searchable index (names + content)
-- [ ] Implement search ranking
+- [x] Implement search ranking
 
 ### 13.2 Search UI
-- [ ] Implement `/` - open search
-- [ ] Implement `Ctrl+p` - quick open
-- [ ] Display search input
-- [ ] Display ranked results
-- [ ] Show matching preview snippet
+- [x] Implement `/` - open search
+- [x] Implement `Ctrl+p` - quick open
+- [x] Display search input
+- [x] Display ranked results
+- [x] Show matching preview snippet
 
 ### 13.3 Search Actions
-- [ ] Navigate results with `j`/`k`
-- [ ] Jump to prompt on `Enter`
-- [ ] Close search on `Esc`
-- [ ] Update results as user types
+- [x] Navigate results with `j`/`k`
+- [x] Jump to prompt on `Enter`
+- [x] Close search on `Esc`
+- [x] Update results as user types
 
 ### 13.4 Quick Insert Reference
 - [x] Implement `Ctrl+r` in Insert mode (reference popup)
@@ -454,9 +454,9 @@
 
 ### 16.1 Generic Popup
 - [x] Create reusable popup component
-- [ ] Support text input
-- [ ] Support list selection
-- [ ] Support fuzzy filtering
+- [x] Support text input
+- [x] Support list selection
+- [x] Support fuzzy filtering
 
 ### 16.2 Confirmation Dialog
 - [x] Create confirmation popup

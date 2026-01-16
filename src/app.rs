@@ -7,7 +7,7 @@ use tui_textarea::{CursorMove, TextArea};
 
 use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState, VimOperator};
+use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, SearchPopupState, SearchResult, TagSelectorState, VimOperator};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
 
@@ -315,6 +315,28 @@ impl<'a> App<'a> {
                             continue;
                         }
 
+                        // Handle search popup input
+                        if self.state.search_popup.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::ConfirmSearch => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::CloseSearch => {
+                                    self.state.search_popup = None;
+                                }
+                                Action::SearchUp | Action::SearchDown => {
+                                    self.handle_action(action)?;
+                                }
+                                Action::None => {
+                                    // Handle text input for search query
+                                    self.handle_search_popup_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // In Insert mode, handle vim-style sub-modes
                         if self.state.mode == Mode::Insert {
                             if let Some(ref mut editor) = self.editor {
@@ -555,10 +577,31 @@ impl<'a> App<'a> {
                 // These are handled in the event loop when in insert mode
             }
 
+            // Search actions
+            Action::OpenSearch | Action::QuickOpen => {
+                self.open_search_popup();
+            }
+            Action::CloseSearch => {
+                self.state.search_popup = None;
+            }
+            Action::SearchUp => {
+                if let Some(ref mut search) = self.state.search_popup {
+                    search.select_previous();
+                    search.ensure_visible(10);
+                }
+            }
+            Action::SearchDown => {
+                if let Some(ref mut search) = self.state.search_popup {
+                    search.select_next();
+                    search.ensure_visible(10);
+                }
+            }
+            Action::ConfirmSearch => {
+                self.confirm_search_selection();
+            }
+
             // TODO: Implement these
-            Action::OpenSearch
-            | Action::QuickOpen
-            | Action::QuickInsertReference
+            Action::QuickInsertReference
             | Action::Export => {
                 self.state.notify("Feature not yet implemented", NotificationLevel::Warning);
             }
@@ -2221,5 +2264,139 @@ impl<'a> App<'a> {
         }
 
         Ok(())
+    }
+
+    /// Open the fuzzy search popup
+    fn open_search_popup(&mut self) {
+        let mut popup = SearchPopupState::new();
+        // Start with all prompts shown
+        popup.results = self.build_search_results("");
+        self.state.search_popup = Some(popup);
+    }
+
+    /// Handle text input in search popup
+    fn handle_search_popup_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        let query = if let Some(ref mut popup) = self.state.search_popup {
+            match key.code {
+                KeyCode::Char(c) => {
+                    popup.query.push(c);
+                }
+                KeyCode::Backspace => {
+                    popup.query.pop();
+                }
+                _ => return,
+            }
+            popup.query.clone()
+        } else {
+            return;
+        };
+
+        // Update results after modifying query
+        let results = self.build_search_results(&query);
+        if let Some(ref mut popup) = self.state.search_popup {
+            popup.results = results;
+            popup.selected_index = 0;
+            popup.scroll_offset = 0;
+        }
+    }
+
+    /// Build fuzzy search results using nucleo
+    fn build_search_results(&self, query: &str) -> Vec<SearchResult> {
+        use nucleo::{Matcher, Utf32Str, Config as NucleoConfig};
+        use nucleo::pattern::{Pattern, CaseMatching, Normalization, AtomKind};
+        
+        if query.is_empty() {
+            // Return all prompts sorted alphabetically when no query
+            return self.all_prompts
+                .iter()
+                .map(|p| SearchResult {
+                    name: p.name.clone(),
+                    preview: p.content.lines().next().unwrap_or("").to_string(),
+                    score: 0,
+                    name_match_indices: Vec::new(),
+                })
+                .collect();
+        }
+
+        let mut matcher = Matcher::new(NucleoConfig::DEFAULT);
+        let pattern = Pattern::new(
+            query,
+            CaseMatching::Smart,
+            Normalization::Smart,
+            AtomKind::Fuzzy,
+        );
+
+        let mut results: Vec<SearchResult> = Vec::new();
+
+        for prompt in &self.all_prompts {
+            // Convert strings to Utf32Str using buffers
+            let mut name_buf = Vec::new();
+            let mut content_buf = Vec::new();
+            
+            let name_utf32 = Utf32Str::new(&prompt.name, &mut name_buf);
+            let content_utf32 = Utf32Str::new(&prompt.content, &mut content_buf);
+
+            // Match against name
+            let name_score = pattern.score(name_utf32, &mut matcher);
+            
+            // Also match against content
+            let content_score = pattern.score(content_utf32, &mut matcher);
+
+            // Use the best score
+            let score = name_score.unwrap_or(0).max(content_score.unwrap_or(0));
+
+            // Get match indices for the name (for highlighting)
+            let mut match_indices = Vec::new();
+            if name_score.is_some() && name_score >= content_score {
+                // Use the indices method to get match positions
+                let mut indices_buf = Vec::new();
+                pattern.indices(name_utf32, &mut matcher, &mut indices_buf);
+                match_indices = indices_buf.iter().map(|&i| i as usize).collect();
+            }
+
+            if score > 0 {
+                results.push(SearchResult {
+                    name: prompt.name.clone(),
+                    preview: prompt.content.lines().next().unwrap_or("").to_string(),
+                    score,
+                    name_match_indices: match_indices,
+                });
+            }
+        }
+
+        // Sort by score (highest first)
+        results.sort_by(|a, b| b.score.cmp(&a.score));
+
+        results
+    }
+
+    /// Confirm search selection and jump to the selected prompt
+    fn confirm_search_selection(&mut self) {
+        let selected_name = if let Some(ref popup) = self.state.search_popup {
+            popup.selected_result().map(|r| r.name.clone())
+        } else {
+            None
+        };
+
+        self.state.search_popup = None;
+
+        if let Some(name) = selected_name {
+            // Find the prompt in the current list
+            if let Some(pos) = self.state.prompts.iter().position(|p| p.name == name) {
+                self.state.selected_index = pos;
+                self.state.list_scroll_offset = pos.saturating_sub(5);
+                self.state.notify(format!("Jumped to '{}'", name), NotificationLevel::Info);
+            } else if let Some(pos) = self.all_prompts.iter().position(|p| p.name == name) {
+                // The prompt might be in another folder or filtered out
+                // For now, we'll switch to showing all prompts
+                self.state.tag_filter = None;
+                self.state.prompts = self.all_prompts.clone();
+                self.state.selected_index = pos;
+                self.state.list_scroll_offset = pos.saturating_sub(5);
+                self.state.notify(format!("Jumped to '{}' (cleared filter)", name), NotificationLevel::Info);
+            }
+        }
     }
 }

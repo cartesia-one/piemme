@@ -62,6 +62,14 @@ pub enum Action {
     QuickOpen,
     /// Quick insert reference (in insert mode)
     QuickInsertReference,
+    /// Close search popup
+    CloseSearch,
+    /// Move up in search results
+    SearchUp,
+    /// Move down in search results
+    SearchDown,
+    /// Confirm search selection (jump to prompt)
+    ConfirmSearch,
 
     // Editing
     /// Save current changes

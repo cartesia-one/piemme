@@ -14,8 +14,8 @@ use crate::models::AppState;
 
 use super::components::{
     render_confirm_dialog, render_folder_selector, render_help_overlay, render_prompt_list,
-    render_reference_popup, render_rename_popup, render_status_bar, render_tag_selector,
-    render_title_bar,
+    render_reference_popup, render_rename_popup, render_search_popup, render_status_bar,
+    render_tag_selector, render_title_bar,
 };
 
 /// Render the entire application
@@ -93,6 +93,11 @@ pub fn render(
     // Render folder selector if active
     if let Some(folder_state) = &state.folder_selector {
         render_folder_selector(frame, size, folder_state);
+    }
+
+    // Render search popup if active
+    if let Some(search_state) = &state.search_popup {
+        render_search_popup(frame, size, search_state);
     }
 }
 

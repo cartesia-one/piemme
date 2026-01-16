@@ -21,6 +21,11 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_reference_popup(key);
     }
 
+    // If search popup is active, handle it
+    if state.search_popup.is_some() {
+        return handle_search_popup(key);
+    }
+
     // If tag selector is active, handle it
     if state.tag_selector.is_some() {
         return handle_tag_selector(key, state);
@@ -461,6 +466,24 @@ fn handle_folder_selector(key: KeyEvent, state: &AppState) -> Action {
         KeyCode::Up | KeyCode::Char('k') => Action::FolderSelectorUp,
         KeyCode::Down | KeyCode::Char('j') => Action::FolderSelectorDown,
         KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::CreateNewFolder,
+        // Other keys are handled directly by the popup input handling in app.rs
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when search popup is active
+fn handle_search_popup(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Enter => Action::ConfirmSearch,
+        KeyCode::Esc => Action::CloseSearch,
+        KeyCode::Up | KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::SearchUp
+        }
+        KeyCode::Down | KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::SearchDown
+        }
+        KeyCode::Up => Action::SearchUp,
+        KeyCode::Down => Action::SearchDown,
         // Other keys are handled directly by the popup input handling in app.rs
         _ => Action::None,
     }

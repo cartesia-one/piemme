@@ -11,5 +11,5 @@ pub use prompt::Prompt;
 pub use state::{
     AppState, ConfirmDialog, FolderSelectorMode, FolderSelectorState, Notification,
     NotificationLevel, PendingAction, PopupType, ReferencePopupState, RenamePopupState,
-    TagSelectorState,
+    SearchPopupState, SearchResult, TagSelectorState,
 };

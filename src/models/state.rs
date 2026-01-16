@@ -51,6 +51,8 @@ pub struct AppState {
     pub tag_selector: Option<TagSelectorState>,
     /// Folder selector popup state
     pub folder_selector: Option<FolderSelectorState>,
+    /// Search popup state
+    pub search_popup: Option<SearchPopupState>,
     /// Editor sub-mode (Vim Normal/Insert/Visual)
     pub editor_mode: EditorMode,
     /// Visual mode anchor position (row, col) for selection start
@@ -88,6 +90,7 @@ impl AppState {
             reference_popup: None,
             tag_selector: None,
             folder_selector: None,
+            search_popup: None,
             editor_mode: EditorMode::VimNormal,
             visual_anchor: None,
             yank_buffer: String::new(),
@@ -372,6 +375,89 @@ impl ReferencePopupState {
                 self.selected_index -= 1;
             }
         }
+    }
+}
+
+/// A search result with fuzzy matching details
+#[derive(Debug, Clone)]
+pub struct SearchResult {
+    /// The prompt name
+    pub name: String,
+    /// Preview of the content (first line)
+    pub preview: String,
+    /// Fuzzy match score (higher is better)
+    pub score: u32,
+    /// Character indices that matched in the name
+    pub name_match_indices: Vec<usize>,
+}
+
+/// State for the fuzzy search popup
+#[derive(Debug, Clone)]
+pub struct SearchPopupState {
+    /// Search query input
+    pub query: String,
+    /// Selected index in search results
+    pub selected_index: usize,
+    /// Search results (sorted by relevance)
+    pub results: Vec<SearchResult>,
+    /// Scroll offset for results list
+    pub scroll_offset: usize,
+}
+
+impl SearchPopupState {
+    pub fn new() -> Self {
+        Self {
+            query: String::new(),
+            selected_index: 0,
+            results: Vec::new(),
+            scroll_offset: 0,
+        }
+    }
+
+    /// Get the currently selected result
+    pub fn selected_result(&self) -> Option<&SearchResult> {
+        self.results.get(self.selected_index)
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.results.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.results.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.results.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.results.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+    
+    /// Update scroll offset to keep selection visible
+    pub fn ensure_visible(&mut self, visible_height: usize) {
+        if visible_height == 0 || self.results.is_empty() {
+            return;
+        }
+
+        // If selection is above the visible area, scroll up
+        if self.selected_index < self.scroll_offset {
+            self.scroll_offset = self.selected_index;
+        }
+        
+        // If selection is below the visible area, scroll down
+        if self.selected_index >= self.scroll_offset + visible_height {
+            self.scroll_offset = self.selected_index - visible_height + 1;
+        }
+    }
+}
+
+impl Default for SearchPopupState {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
