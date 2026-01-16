@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 TAPES_DIR="$SCRIPT_DIR/tapes"
 OUTPUT_DIR="$SCRIPT_DIR/output"
+DEMO_DIR="$SCRIPT_DIR/demo-workspace"
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,6 +27,31 @@ if ! command -v vhs &> /dev/null; then
     echo "Or: brew install vhs"
     exit 1
 fi
+
+# Backup existing .piemme folder if it exists
+BACKUP_DIR=""
+if [ -d "$PROJECT_DIR/.piemme" ]; then
+    BACKUP_DIR=$(mktemp -d)
+    echo -e "${YELLOW}Backing up existing .piemme folder to $BACKUP_DIR${NC}"
+    cp -r "$PROJECT_DIR/.piemme" "$BACKUP_DIR/.piemme"
+fi
+
+# Cleanup function to restore backup
+cleanup() {
+    # Remove demo workspace
+    rm -rf "$DEMO_DIR"
+    rm -rf "$PROJECT_DIR/.piemme"
+    
+    # Restore backup if it exists
+    if [ -n "$BACKUP_DIR" ] && [ -d "$BACKUP_DIR/.piemme" ]; then
+        echo -e "${YELLOW}Restoring original .piemme folder${NC}"
+        cp -r "$BACKUP_DIR/.piemme" "$PROJECT_DIR/.piemme"
+        rm -rf "$BACKUP_DIR"
+    fi
+}
+
+# Set trap to cleanup on exit (success or failure)
+trap cleanup EXIT
 
 # Build piemme first (release mode for better performance in demos)
 echo -e "${YELLOW}Building piemme in release mode...${NC}"
@@ -66,9 +92,6 @@ for tape in "$TAPES_DIR"/*.tape; do
         echo -e "${RED}  ✗ Failed: $TAPE_NAME${NC}"
         FAILED=$((FAILED + 1))
     fi
-    
-    # Cleanup after each tape
-    rm -rf "$PROJECT_DIR/.piemme"
     
     echo ""
 done
