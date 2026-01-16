@@ -379,7 +379,11 @@ pub fn render_file_picker(frame: &mut Frame, area: Rect, state: &FilePickerState
     let results_inner_height = chunks[1].height.saturating_sub(2) as usize; // Account for borders
 
     // Create items with scroll offset
-    // Note: enumerate() before skip() preserves absolute indices, so `i` matches state.selected_index
+    // IMPORTANT: enumerate() is called BEFORE skip(), which means the indices (i) are absolute positions
+    // in the filtered_files list, not relative to the visible window. This is correct because
+    // state.selected_index is also an absolute index into filtered_files.
+    // Example: If scroll_offset=5 and selected_index=7, enumerate().skip(5) yields [(5,item5), (6,item6), (7,item7), ...]
+    // and the comparison i==7 correctly highlights item7.
     let items: Vec<ListItem> = state
         .filtered_files
         .iter()

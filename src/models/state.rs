@@ -743,6 +743,15 @@ impl FilePickerState {
         }
     }
 
+    /// Check if a directory should be excluded from file listing
+    fn should_exclude_dir(dir_name: &str) -> bool {
+        dir_name.starts_with('.') 
+            || dir_name == "target" 
+            || dir_name == "node_modules"
+            || dir_name == "dist"
+            || dir_name == "__pycache__"
+    }
+
     /// List files in directory (recursively, up to a reasonable depth)
     fn list_files(base_dir: &std::path::Path) -> Vec<String> {
         use std::fs;
@@ -760,12 +769,7 @@ impl FilePickerState {
                 } else if path.is_dir() {
                     // Recursively list subdirectory files (max depth 3)
                     if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                        // Skip hidden directories and common build/dependency directories
-                        if !file_name.starts_with('.') 
-                            && file_name != "target" 
-                            && file_name != "node_modules"
-                            && file_name != "dist"
-                            && file_name != "__pycache__" {
+                        if !Self::should_exclude_dir(file_name) {
                             files.extend(Self::list_files_recursive(&path, base_dir, 1, 3));
                         }
                     }
@@ -801,11 +805,7 @@ impl FilePickerState {
                     }
                 } else if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                        if !file_name.starts_with('.') 
-                            && file_name != "target" 
-                            && file_name != "node_modules"
-                            && file_name != "dist"
-                            && file_name != "__pycache__" {
+                        if !Self::should_exclude_dir(file_name) {
                             files.extend(Self::list_files_recursive(&path, base_dir, current_depth + 1, max_depth));
                         }
                     }
@@ -822,6 +822,9 @@ impl FilePickerState {
             self.filtered_files = self.all_files.clone();
         } else {
             let filter_lower = self.filter.to_lowercase();
+            // Note: file.to_lowercase() is called for each file on every filter update.
+            // For large file lists, consider caching lowercase versions, but for typical
+            // project sizes (hundreds of files), this is acceptable.
             self.filtered_files = self.all_files
                 .iter()
                 .filter(|file| file.to_lowercase().contains(&filter_lower))
