@@ -6,6 +6,24 @@ Piemme is a terminal-based user interface (TUI) application for managing, organi
 
 ---
 
+## Demo GIFs
+
+GIF demos are located in `gifs/output/` and showcase all major features:
+
+| GIF | Features Demonstrated |
+|-----|----------------------|
+| `01-navigation.gif` | Basic navigation (j/k/g/G), panel resize (Ctrl+l/h), help overlay |
+| `02-create-edit.gif` | Create prompts (n), vim editing (i/o/dd/u/Ctrl+r), save with Esc |
+| `03-references.gif` | `[[reference]]` syntax, Ctrl+r insertion, preview mode, prompt composition |
+| `04-commands.gif` | `{{command}}` syntax, safe mode toggle (!), command execution on copy |
+| `05-tags-filtering.gif` | Tag selector (t), create tags (Ctrl+n), filter cycling ([/]) |
+| `06-folders-archive.gif` | Folder navigation (O), move to folder (M), archive (a/A/u) |
+| `07-search-actions.gif` | Fuzzy search (/), quick open (Ctrl+p), rename (r), delete (d), duplicate (Ctrl+d) |
+
+To regenerate GIFs: `cd gifs && ./generate-all.sh` (requires [vhs](https://github.com/charmbracelet/vhs))
+
+---
+
 ## Technology Stack
 
 | Component | Technology | Purpose |

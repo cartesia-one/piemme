@@ -1,14 +1,14 @@
-# VHS Tape: Basic Navigation
-# Demonstrates: j/k navigation, g/G, scrolling through prompts
+# VHS Tape: Basic Navigation & UI Overview
+# Demonstrates: j/k/g/G navigation, scrolling, panel resize, help overlay
 
 Output output/01-navigation.gif
 
 Set Shell "bash"
-Set FontSize 22
+Set FontSize 20
 Set Width 1400
 Set Height 800
 Set Theme "Dracula"
-Set TypingSpeed 75ms
+Set TypingSpeed 80ms
 Set Padding 20
 
 # Setup: copy fixture to .piemme
@@ -19,30 +19,32 @@ Sleep 500ms
 Type "rm -rf .piemme && cp -r gifs/fixtures/demo-piemme .piemme"
 Enter
 Sleep 500ms
+Type "cargo build --release 2>/dev/null"
+Enter
+Sleep 5s
 Show
 
-# Start piemme and wait for UI to load
-Type "cargo run -q"
+# Start piemme
+Type "./target/release/piemme"
 Enter
-Wait+Screen /piemme/
-Sleep 1s
+Sleep 2s
 
-# Show initial state
-Sleep 1s
+# Show initial state - display the UI
+Sleep 1500ms
 
 # Navigate down with j
 Type "j"
-Sleep 600ms
+Sleep 500ms
 Type "j"
-Sleep 600ms
+Sleep 500ms
 Type "j"
-Sleep 600ms
+Sleep 500ms
 
 # Navigate up with k
 Type "k"
-Sleep 600ms
+Sleep 500ms
 Type "k"
-Sleep 600ms
+Sleep 500ms
 
 # Jump to last prompt with G
 Type "G"
@@ -54,17 +56,33 @@ Sleep 800ms
 
 # Navigate with arrow keys
 Down
-Sleep 500ms
+Sleep 400ms
 Down
-Sleep 500ms
+Sleep 400ms
 Up
-Sleep 500ms
+Sleep 400ms
 
-# Show help briefly
+# Resize left panel with Ctrl+l (increase)
+Ctrl+l
+Sleep 400ms
+Ctrl+l
+Sleep 400ms
+Ctrl+l
+Sleep 400ms
+
+# Resize left panel with Ctrl+h (decrease)
+Ctrl+h
+Sleep 400ms
+Ctrl+h
+Sleep 400ms
+
+# Show help overlay
 Type "?"
-Sleep 2s
+Sleep 2500ms
+
+# Close help
 Escape
-Sleep 500ms
+Sleep 800ms
 
 # Quit
 Type "q"

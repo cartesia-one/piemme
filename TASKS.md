@@ -461,6 +461,25 @@
 
 ---
 
+## Phase 20: GIF Showcase Documentation
+
+### 20.1 Demo Fixtures
+- [x] Create comprehensive prompt fixtures with references and commands
+- [x] Create folder structure (work/, personal/)
+- [x] Create archived prompts
+- [x] Configure tag colors and settings
+
+### 20.2 VHS Tape Scripts
+- [x] 01-navigation.tape: Basic navigation (j/k/g/G), panel resize (Ctrl+l/h), help overlay
+- [x] 02-create-edit.tape: Create prompts (n), vim editing (i/o/dd/u/Ctrl+r), save with Esc
+- [x] 03-references.tape: [[reference]] syntax, Ctrl+r insertion, preview mode, composition
+- [x] 04-commands.tape: {{command}} syntax, safe mode toggle (!), command execution
+- [x] 05-tags-filtering.tape: Tag selector (t), create tags (Ctrl+n), filter cycling ([/])
+- [x] 06-folders-archive.tape: Folders (O/M), archive (a/A/u)
+- [x] 07-search-actions.tape: Fuzzy search (/), quick open (Ctrl+p), rename (r), delete (d), duplicate (Ctrl+d)
+
+---
+
 ## Phase 21: Release Preparation
 
 ### 21.1 Build & Distribution

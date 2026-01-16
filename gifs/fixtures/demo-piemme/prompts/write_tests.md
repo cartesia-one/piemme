@@ -1,15 +1,17 @@
 ---
-id: "550e8400-e29b-41d4-a716-446655440004"
+id: "a0000000-0001-0001-0001-000000000008"
 tags: ["coding", "work"]
-created: "2026-01-13T11:00:00Z"
-modified: "2026-01-13T11:00:00Z"
+created: "2026-01-15T08:00:00Z"
+modified: "2026-01-15T08:00:00Z"
 ---
-Write comprehensive unit tests for the following code.
+[[base_context]]
+
+Write comprehensive unit tests for this code.
 
 Include:
 - Happy path tests
 - Edge cases
-- Error handling tests
+- Error handling
 - Boundary conditions
 
-Use descriptive test names that explain what is being tested.
+Use descriptive test names.

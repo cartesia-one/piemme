@@ -6,3 +6,4 @@ tag_colors:
   personal: "magenta"
   ai: "cyan"
 default_export_format: "rendered"
+left_panel_width: 25

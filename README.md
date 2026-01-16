@@ -2,6 +2,24 @@
 
 A terminal-based user interface (TUI) application for managing, organizing, and composing reusable prompts with vim-like keybindings.
 
+## Demo
+
+| Navigation & UI | Create & Edit |
+|:---:|:---:|
+| ![Navigation](gifs/output/01-navigation.gif) | ![Create Edit](gifs/output/02-create-edit.gif) |
+
+| References Power | Commands Power |
+|:---:|:---:|
+| ![References](gifs/output/03-references.gif) | ![Commands](gifs/output/04-commands.gif) |
+
+| Tags & Filtering | Folders & Archive |
+|:---:|:---:|
+| ![Tags](gifs/output/05-tags-filtering.gif) | ![Folders Archive](gifs/output/06-folders-archive.gif) |
+
+| Search & Actions |
+|:---:|
+| ![Search](gifs/output/07-search-actions.gif) |
+
 ## Features
 
 - **Vim-like Navigation**: Navigate with `j`/`k`, go to first/last with `g`/`G`
