@@ -20,17 +20,29 @@ Piemme is a blazingly fast TUI prompt manager built in Rust. Your prompts live a
 
 ## Demo
 
-| Navigation & UI | Create & Edit |
-|:---:|:---:|
-| ![Navigation](gifs/output/01-navigation.gif) | ![Create Edit](gifs/output/02-create-edit.gif) |
+| Navigation & UI |
+|:---:|
+| ![Navigation](gifs/output/01-navigation.gif) |
 
-| References | Commands |
-|:---:|:---:|
-| ![References](gifs/output/03-references.gif) | ![Commands](gifs/output/04-commands.gif) |
+| Create & Edit |
+|:---:|
+| ![Create Edit](gifs/output/02-create-edit.gif) |
 
-| Tags & Filtering | Folders & Archive |
-|:---:|:---:|
-| ![Tags](gifs/output/05-tags-filtering.gif) | ![Folders Archive](gifs/output/06-folders-archive.gif) |
+| References |
+|:---:|
+| ![References](gifs/output/03-references.gif) |
+
+| Commands |
+|:---:|
+| ![Commands](gifs/output/04-commands.gif) |
+
+| Tags & Filtering |
+|:---:|
+| ![Tags](gifs/output/05-tags-filtering.gif) |
+
+| Folders & Archive |
+|:---:|
+| ![Folders Archive](gifs/output/06-folders-archive.gif) |
 
 | Search & Actions |
 |:---:|
