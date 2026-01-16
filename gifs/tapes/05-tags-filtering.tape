@@ -78,16 +78,16 @@ Sleep 800ms
 # Show updated prompt
 Sleep 1200ms
 
-# Open tag selector again
-Type "t"
-Sleep 800ms
-
 # Create a new tag with Ctrl+n
 Ctrl+n
 Sleep 600ms
 Type "urgent"
 Sleep 600ms
 Enter
+Sleep 800ms
+
+# Close tag selector
+Escape
 Sleep 1000ms
 
 # Tag applied
