@@ -47,6 +47,8 @@ pub struct AppState {
     pub rename_popup: Option<RenamePopupState>,
     /// Reference insertion popup state
     pub reference_popup: Option<ReferencePopupState>,
+    /// File picker popup state
+    pub file_picker: Option<FilePickerState>,
     /// Tag selector popup state
     pub tag_selector: Option<TagSelectorState>,
     /// Folder selector popup state
@@ -88,6 +90,7 @@ impl AppState {
             help_scroll_offset: 0,
             rename_popup: None,
             reference_popup: None,
+            file_picker: None,
             tag_selector: None,
             folder_selector: None,
             search_popup: None,
@@ -709,6 +712,166 @@ impl FolderSelectorState {
         self.new_folder_input.clear();
         self.update_filter();
         Some(folder)
+    }
+}
+
+/// State for the file picker popup
+#[derive(Debug, Clone)]
+pub struct FilePickerState {
+    /// Search/filter input
+    pub filter: String,
+    /// Selected index in filtered results
+    pub selected_index: usize,
+    /// All available files in current directory
+    pub all_files: Vec<String>,
+    /// Filtered files (cached)
+    pub filtered_files: Vec<String>,
+    /// Scroll offset for the file list
+    pub scroll_offset: usize,
+}
+
+impl FilePickerState {
+    pub fn new(base_dir: &std::path::Path) -> Self {
+        let all_files = Self::list_files(base_dir);
+        let filtered_files = all_files.clone();
+        Self {
+            filter: String::new(),
+            selected_index: 0,
+            all_files,
+            filtered_files,
+            scroll_offset: 0,
+        }
+    }
+
+    /// List files in directory (recursively, up to a reasonable depth)
+    fn list_files(base_dir: &std::path::Path) -> Vec<String> {
+        use std::fs;
+        let mut files = Vec::new();
+        
+        if let Ok(entries) = fs::read_dir(base_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    if let Ok(relative) = path.strip_prefix(base_dir) {
+                        if let Some(path_str) = relative.to_str() {
+                            files.push(path_str.to_string());
+                        }
+                    }
+                } else if path.is_dir() {
+                    // Recursively list subdirectory files (max depth 3)
+                    if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                        // Skip hidden directories and common build/dependency directories
+                        if !file_name.starts_with('.') 
+                            && file_name != "target" 
+                            && file_name != "node_modules"
+                            && file_name != "dist"
+                            && file_name != "__pycache__" {
+                            files.extend(Self::list_files_recursive(&path, base_dir, 1, 3));
+                        }
+                    }
+                }
+            }
+        }
+        
+        files.sort();
+        files
+    }
+
+    fn list_files_recursive(
+        dir: &std::path::Path,
+        base_dir: &std::path::Path,
+        current_depth: usize,
+        max_depth: usize,
+    ) -> Vec<String> {
+        use std::fs;
+        let mut files = Vec::new();
+        
+        if current_depth > max_depth {
+            return files;
+        }
+        
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    if let Ok(relative) = path.strip_prefix(base_dir) {
+                        if let Some(path_str) = relative.to_str() {
+                            files.push(path_str.to_string());
+                        }
+                    }
+                } else if path.is_dir() {
+                    if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                        if !file_name.starts_with('.') 
+                            && file_name != "target" 
+                            && file_name != "node_modules"
+                            && file_name != "dist"
+                            && file_name != "__pycache__" {
+                            files.extend(Self::list_files_recursive(&path, base_dir, current_depth + 1, max_depth));
+                        }
+                    }
+                }
+            }
+        }
+        
+        files
+    }
+
+    /// Update the filter and refresh filtered results
+    pub fn update_filter(&mut self) {
+        if self.filter.is_empty() {
+            self.filtered_files = self.all_files.clone();
+        } else {
+            let filter_lower = self.filter.to_lowercase();
+            self.filtered_files = self.all_files
+                .iter()
+                .filter(|file| file.to_lowercase().contains(&filter_lower))
+                .cloned()
+                .collect();
+        }
+        // Reset selection if out of bounds
+        if self.selected_index >= self.filtered_files.len() {
+            self.selected_index = 0;
+        }
+    }
+
+    /// Get the currently selected file path
+    pub fn selected_file(&self) -> Option<&str> {
+        self.filtered_files.get(self.selected_index).map(|s| s.as_str())
+    }
+
+    /// Move selection down
+    pub fn select_next(&mut self) {
+        if !self.filtered_files.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.filtered_files.len();
+        }
+    }
+
+    /// Move selection up
+    pub fn select_previous(&mut self) {
+        if !self.filtered_files.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.filtered_files.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+
+    /// Update scroll offset to keep selection visible
+    pub fn ensure_visible(&mut self, visible_height: usize) {
+        if visible_height == 0 || self.filtered_files.is_empty() {
+            return;
+        }
+
+        // If selection is above the visible area, scroll up
+        if self.selected_index < self.scroll_offset {
+            self.scroll_offset = self.selected_index;
+        }
+        
+        // If selection is below the visible area, scroll down
+        if self.selected_index >= self.scroll_offset + visible_height {
+            self.scroll_offset = self.selected_index - visible_height + 1;
+        }
     }
 }
 

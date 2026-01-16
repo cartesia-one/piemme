@@ -262,6 +262,29 @@ impl<'a> App<'a> {
                             continue;
                         }
 
+                        // Handle file picker input
+                        if self.state.file_picker.is_some() {
+                            let action = handle_key_event(key, &self.state);
+                            match action {
+                                Action::FilePickerUp => {
+                                    if let Some(ref mut picker) = self.state.file_picker {
+                                        picker.select_previous();
+                                    }
+                                }
+                                Action::FilePickerDown => {
+                                    if let Some(ref mut picker) = self.state.file_picker {
+                                        picker.select_next();
+                                    }
+                                }
+                                Action::None => {
+                                    // Handle text input for filter
+                                    self.handle_file_picker_input(key);
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         // Handle tag selector input
                         if self.state.tag_selector.is_some() {
                             let action = handle_key_event(key, &self.state);
@@ -568,6 +591,29 @@ impl<'a> App<'a> {
             // Reference popup navigation (handled in run loop, but just in case)
             Action::ReferencePopupUp | Action::ReferencePopupDown => {
                 // Handled in run loop
+            }
+
+            // File picker actions
+            Action::OpenFilePicker => {
+                self.open_file_picker();
+            }
+            Action::ConfirmFile => {
+                self.confirm_file_picker()?;
+            }
+            Action::CancelFilePicker => {
+                self.state.file_picker = None;
+            }
+            Action::FilePickerUp => {
+                if let Some(ref mut picker) = self.state.file_picker {
+                    picker.select_previous();
+                    picker.ensure_visible(10);
+                }
+            }
+            Action::FilePickerDown => {
+                if let Some(ref mut picker) = self.state.file_picker {
+                    picker.select_next();
+                    picker.ensure_visible(10);
+                }
             }
 
             // Duplicate prompt
@@ -1942,6 +1988,65 @@ impl<'a> App<'a> {
         }
 
         self.state.notify(format!("Inserted [[{}]]", selected_name), NotificationLevel::Success);
+
+        Ok(())
+    }
+
+    /// Open the file picker popup (for Ctrl+f in editor)
+    fn open_file_picker(&mut self) {
+        // Only allow file picker in Insert mode (editor is active)
+        if self.state.mode != Mode::Insert {
+            return;
+        }
+
+        // Get current working directory
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        
+        let picker = crate::models::FilePickerState::new(&current_dir);
+        self.state.file_picker = Some(picker);
+    }
+
+    /// Handle text input in file picker popup
+    fn handle_file_picker_input(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::KeyCode;
+
+        if let Some(ref mut picker) = self.state.file_picker {
+            match key.code {
+                KeyCode::Char(c) => {
+                    picker.filter.push(c);
+                    picker.update_filter();
+                }
+                KeyCode::Backspace => {
+                    picker.filter.pop();
+                    picker.update_filter();
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Confirm file selection and insert into editor
+    fn confirm_file_picker(&mut self) -> Result<()> {
+        let picker = match self.state.file_picker.take() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        let selected_file = match picker.selected_file() {
+            Some(file) => file.to_string(),
+            None => {
+                self.state.notify("No file selected", NotificationLevel::Warning);
+                return Ok(());
+            }
+        };
+
+        // Insert the file reference into the editor
+        if let Some(ref mut editor) = self.editor {
+            let file_ref = format!("[[file:{}]]", selected_file);
+            editor.insert_str(&file_ref);
+        }
+
+        self.state.notify(format!("Inserted [[file:{}]]", selected_file), NotificationLevel::Success);
 
         Ok(())
     }

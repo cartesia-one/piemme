@@ -139,6 +139,18 @@ pub enum Action {
     /// Move down in reference popup
     ReferencePopupDown,
 
+    // File picker popup actions (CTRL+F in insert mode)
+    /// Open file picker popup
+    OpenFilePicker,
+    /// Confirm file selection
+    ConfirmFile,
+    /// Cancel file picker
+    CancelFilePicker,
+    /// Move up in file picker
+    FilePickerUp,
+    /// Move down in file picker
+    FilePickerDown,
+
     // Tag selector actions
     /// Confirm tag toggle/selection
     ConfirmTagToggle,

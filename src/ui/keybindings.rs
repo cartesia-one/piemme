@@ -21,6 +21,11 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
         return handle_reference_popup(key);
     }
 
+    // If file picker is active, handle it
+    if state.file_picker.is_some() {
+        return handle_file_picker(key);
+    }
+
     // If search popup is active, handle it
     if state.search_popup.is_some() {
         return handle_search_popup(key);
@@ -227,6 +232,9 @@ fn handle_vim_normal_mode(key: KeyEvent) -> Action {
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
         KeyCode::Char('r') => Action::OpenReferencePopup,
         
+        // Open file picker (Ctrl+f)
+        KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenFilePicker,
+        
         // Help
         KeyCode::Char('?') => Action::OpenHelp,
         
@@ -251,6 +259,7 @@ fn handle_vim_insert_mode(key: KeyEvent) -> Action {
         KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Paste,
         KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::QuickInsertReference,
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
+        KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenFilePicker,
         
         // Hybrid: Shift+Arrow for selection while in insert mode
         KeyCode::Left if key.modifiers.contains(KeyModifiers::SHIFT) => Action::ExtendSelection,
@@ -416,6 +425,24 @@ fn handle_reference_popup(key: KeyEvent) -> Action {
         }
         KeyCode::Up => Action::ReferencePopupUp,
         KeyCode::Down => Action::ReferencePopupDown,
+        // Other keys are handled directly by the popup input handling in app.rs
+        _ => Action::None,
+    }
+}
+
+/// Handle keys when file picker is active
+fn handle_file_picker(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Enter => Action::ConfirmFile,
+        KeyCode::Esc => Action::CancelFilePicker,
+        KeyCode::Up | KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::FilePickerUp
+        }
+        KeyCode::Down | KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::FilePickerDown
+        }
+        KeyCode::Up => Action::FilePickerUp,
+        KeyCode::Down => Action::FilePickerDown,
         // Other keys are handled directly by the popup input handling in app.rs
         _ => Action::None,
     }
