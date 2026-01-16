@@ -281,8 +281,12 @@ pub enum PendingAction {
     DeletePrompt { name: String },
     /// Permanently delete from archive
     PermanentDelete { name: String },
-    /// Execute commands (safe mode confirmation)
-    ExecuteCommands { commands: Vec<String> },
+    /// Execute commands and copy to clipboard (safe mode confirmation)
+    /// Contains: commands to execute, content with refs resolved (commands not yet executed)
+    ExecuteCommandsAndCopy {
+        commands: Vec<String>,
+        content_with_refs: String,
+    },
 }
 
 /// State for the rename popup

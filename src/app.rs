@@ -1376,9 +1376,10 @@ impl<'a> App<'a> {
                     PendingAction::DeletePrompt { name } | PendingAction::PermanentDelete { name } => {
                         self.execute_delete(&name)?;
                     }
-                    PendingAction::ExecuteCommands { commands: _ } => {
-                        // TODO: Handle command execution confirmation
-                        self.state.notify("Command execution not yet implemented", NotificationLevel::Warning);
+                    PendingAction::ExecuteCommandsAndCopy { content_with_refs, .. } => {
+                        // User confirmed: execute commands and copy to clipboard
+                        let final_content = crate::engine::resolve_commands_in_content(&content_with_refs);
+                        self.copy_text_to_clipboard(&final_content)?;
                     }
                 }
             }
@@ -1543,36 +1544,77 @@ impl<'a> App<'a> {
     /// Copy prompt content to clipboard
     fn copy_to_clipboard(&mut self, resolve: bool) -> Result<()> {
         if let Some(prompt) = self.state.selected_prompt() {
-            let content = if resolve {
-                // Resolve references and commands
+            if resolve {
+                // Resolve references first (always safe)
                 let get_content = |name: &str| -> Option<String> {
                     self.state.prompts.iter().find(|p| p.name == name).map(|p| p.content.clone())
                 };
                 
-                let result = crate::engine::resolve_prompt(&prompt.content, get_content, self.state.safe_mode);
-                result.content
+                // Resolve references but don't execute commands yet
+                let result = crate::engine::resolve_prompt(&prompt.content, get_content, false);
+                
+                // Check if there are commands to execute
+                if !result.commands.is_empty() && self.state.safe_mode {
+                    // Safe mode ON: show confirmation dialog with list of commands
+                    let cmd_list = result.commands.iter()
+                        .enumerate()
+                        .map(|(i, c)| format!("{}. {}", i + 1, c))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    
+                    let message = format!(
+                        "The following commands will be executed:\n\n{}\n\nProceed?",
+                        cmd_list
+                    );
+                    
+                    let action = PendingAction::ExecuteCommandsAndCopy {
+                        commands: result.commands,
+                        content_with_refs: result.content,
+                    };
+                    
+                    self.state.confirm_dialog = Some(ConfirmDialog::new(
+                        "Execute Commands?",
+                        message,
+                        action,
+                    ));
+                    return Ok(());
+                }
+                
+                // Either no commands, or safe mode is OFF - execute immediately
+                let final_content = if !result.commands.is_empty() {
+                    crate::engine::resolve_commands_in_content(&result.content)
+                } else {
+                    result.content
+                };
+                
+                self.copy_text_to_clipboard(&final_content)?;
             } else {
-                prompt.content.clone()
-            };
-
-            // Copy to clipboard
-            match arboard::Clipboard::new() {
-                Ok(mut clipboard) => {
-                    if let Err(e) = clipboard.set_text(&content) {
-                        self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                    } else {
-                        // On Linux, clipboard content is owned by the application.
-                        // We need to keep the clipboard alive briefly for clipboard managers to capture it.
-                        std::thread::sleep(Duration::from_millis(100));
-                        self.state.notify("Copied to clipboard", NotificationLevel::Success);
-                    }
-                }
-                Err(e) => {
-                    self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
-                }
+                // Raw copy - no resolution
+                let content = prompt.content.clone();
+                self.copy_text_to_clipboard(&content)?;
             }
         }
 
+        Ok(())
+    }
+
+    /// Actually copy text to the system clipboard
+    fn copy_text_to_clipboard(&mut self, content: &str) -> Result<()> {
+        match arboard::Clipboard::new() {
+            Ok(mut clipboard) => {
+                if let Err(e) = clipboard.set_text(content) {
+                    self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+                } else {
+                    // On Linux, clipboard content is owned by the application.
+                    // We need to keep the clipboard alive briefly for clipboard managers to capture it.
+                    std::thread::sleep(Duration::from_millis(100));
+                    self.state.notify("Copied to clipboard", NotificationLevel::Success);
+                }
+            }
+            Err(e) => {
+                self.state.notify(format!("Clipboard error: {}", e), NotificationLevel::Error);
+            }
+        }
         Ok(())
     }
 

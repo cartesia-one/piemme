@@ -281,10 +281,10 @@
 
 ### 8.5 Command Confirmation
 - [x] Detect commands in content
-- [ ] Show confirmation dialog when safe mode ON
-- [ ] List all commands to be executed
-- [ ] Execute on confirm, cancel on reject
-- [ ] Skip confirmation when safe mode OFF
+- [x] Show confirmation dialog when safe mode ON
+- [x] List all commands to be executed
+- [x] Execute on confirm, cancel on reject
+- [x] Skip confirmation when safe mode OFF
 
 ### 8.6 Copy with Resolution
 - [x] Combine reference resolution and command execution

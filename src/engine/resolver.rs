@@ -69,7 +69,7 @@ where
 
     // Execute commands if requested
     if execute_cmds {
-        result.content = resolve_commands(&result.content);
+        result.content = resolve_commands_in_content(&result.content);
     }
 
     result
@@ -136,8 +136,8 @@ where
     result
 }
 
-/// Replace command placeholders with their output
-fn resolve_commands(content: &str) -> String {
+/// Replace command placeholders with their output (public for use in command confirmation flow)
+pub fn resolve_commands_in_content(content: &str) -> String {
     if !has_commands(content) {
         return content.to_string();
     }
