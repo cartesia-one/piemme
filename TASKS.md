@@ -627,3 +627,12 @@ Add these features incrementally after MVP is stable.
 - [x] `q` quits application from editor Vim Normal mode (in addition to Normal mode)
 - [x] `r` and `Ctrl+r` both open reference insertion popup in editor Vim Normal mode
   - Previously `Ctrl+r` was redo, now `r` and `Ctrl+r` are unified for references
+
+---
+
+## Bug Fixes
+
+### Help System
+- [x] Fix `?` key triggering help overlay in Vim Insert mode
+  - Now `?` only opens help when not in Insert mode (VimInsert sub-mode)
+  - Allows typing `?` character in the editor

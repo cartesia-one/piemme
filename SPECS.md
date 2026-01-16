@@ -228,7 +228,7 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 
 | Key | Action |
 |-----|--------|
-| `?` | Open help overlay with all keybindings |
+| `?` | Open help overlay (except when typing in Insert mode) |
 | `Ctrl+c` | Quit application (with confirmation if unsaved) |
 | `q` | Quit application (with confirmation if unsaved) |
 | `Ctrl+y` | Copy rendered prompt to clipboard (overrides vim-style y) |
@@ -387,7 +387,9 @@ Use `Ctrl+y` from any mode to copy the rendered prompt to the system clipboard.
 ### Rename Popup
 
 When pressing `r` on a prompt, a rename popup appears:
-- Type the new name (valid characters: `a-z`, `0-9`, `_`)
+- The popup shows the current name initially
+- Type to modify the name (characters are appended)
+- Valid characters: `a-z`, `0-9`, `_`
 - The input box turns red if the name is invalid (invalid characters or already exists)
 - Press `Enter` to confirm, `Esc` to cancel
 

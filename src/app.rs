@@ -1731,18 +1731,26 @@ impl<'a> App<'a> {
     fn handle_rename_popup_input(&mut self, key: crossterm::event::KeyEvent) {
         use crossterm::event::KeyCode;
 
-        if let Some(ref mut popup) = self.state.rename_popup {
-            match key.code {
-                KeyCode::Char(c) => {
-                    popup.input.push(c);
-                    self.validate_rename_input();
+        let should_validate = {
+            if let Some(ref mut popup) = self.state.rename_popup {
+                match key.code {
+                    KeyCode::Char(c) => {
+                        popup.input.push(c);
+                        true
+                    }
+                    KeyCode::Backspace => {
+                        popup.input.pop();
+                        true
+                    }
+                    _ => false,
                 }
-                KeyCode::Backspace => {
-                    popup.input.pop();
-                    self.validate_rename_input();
-                }
-                _ => {}
+            } else {
+                false
             }
+        };
+
+        if should_validate {
+            self.validate_rename_input();
         }
     }
 

@@ -50,7 +50,10 @@ pub fn handle_key_event(key: KeyEvent, state: &AppState) -> Action {
             return Action::CopyRendered;
         }
         KeyCode::Char('?') => {
-            return Action::OpenHelp;
+            // Don't trigger help when in Insert mode (VimInsert) - allow typing '?'
+            if state.mode != Mode::Insert || state.editor_mode != EditorMode::VimInsert {
+                return Action::OpenHelp;
+            }
         }
         _ => {}
     }
