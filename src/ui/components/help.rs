@@ -85,7 +85,8 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
         ]),
         Line::from(""),
         key_binding("?", "Open/close this help"),
-        key_binding("Ctrl+c / q", "Quit application"),
+        key_binding("q", "Quit application"),
+        key_binding("Ctrl+y", "Copy rendered to clipboard"),
         Line::from(""),
     ];
 
@@ -153,13 +154,18 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
                 key_binding("c", "Change line"),
                 key_binding("C", "Change to end of line"),
                 key_binding("u", "Undo"),
-                key_binding("Ctrl+r", "Redo"),
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Clipboard", Style::default().add_modifier(Modifier::BOLD)),
                 ]),
                 key_binding("y", "Yank (copy) line"),
                 key_binding("p / P", "Put after/before"),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("References", Style::default().add_modifier(Modifier::BOLD)),
+                ]),
+                key_binding("r / Ctrl+r", "Insert reference"),
+                key_binding("Ctrl+f", "Insert file reference"),
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Visual Selection", Style::default().add_modifier(Modifier::BOLD)),
@@ -176,12 +182,12 @@ fn get_help_content(mode: Mode) -> Vec<Line<'static>> {
                 key_binding("Esc", "Return to Vim Normal"),
                 key_binding("Ctrl+s", "Save"),
                 key_binding("Ctrl+z", "Undo"),
-                key_binding("Ctrl+y", "Redo"),
                 key_binding("Ctrl+a", "Select all"),
                 key_binding("Ctrl+c", "Copy selection"),
                 key_binding("Ctrl+v", "Paste"),
                 key_binding("Shift+Arrows", "Extend selection"),
                 key_binding("Ctrl+r", "Insert reference"),
+                key_binding("Ctrl+f", "Insert file reference"),
             ]);
         }
         Mode::Archive => {

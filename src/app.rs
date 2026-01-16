@@ -834,6 +834,14 @@ impl<'a> App<'a> {
                 }
                 return Ok(());
             }
+            Action::HelpScrollUp => {
+                self.state.help_scroll_offset = self.state.help_scroll_offset.saturating_sub(1);
+                return Ok(());
+            }
+            Action::HelpScrollDown => {
+                self.state.help_scroll_offset = self.state.help_scroll_offset.saturating_add(1);
+                return Ok(());
+            }
             Action::OpenReferencePopup => {
                 self.open_reference_popup();
                 return Ok(());

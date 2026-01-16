@@ -133,8 +133,8 @@ Press `n` to create your first prompt. Start typing. Press `Esc` to save and ret
 | `Esc` | Save & exit (from Normal) |
 | `dd` / `cc` / `yy` | Delete / Change / Yank line |
 | `dw` / `cw` / `yw` | Delete / Change / Yank word |
-| `u` / `Ctrl+r` | Undo / Redo |
-| `Ctrl+r` | Insert reference `[[...]]` |
+| `u` | Undo |
+| `r` / `Ctrl+r` | Insert reference `[[...]]` |
 | `Ctrl+f` | Insert file reference `[[file:...]]` |
 | `v` / `V` | Visual / Visual Line mode |
 

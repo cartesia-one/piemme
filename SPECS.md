@@ -248,7 +248,6 @@ After selecting text, use `Ctrl+c` to copy and `Ctrl+v` to paste.
 | Key | Action |
 |-----|--------|
 | `?` | Open help overlay (except when typing in Insert mode) |
-| `Ctrl+c` | Quit application (with confirmation if unsaved) |
 | `q` | Quit application (with confirmation if unsaved) |
 | `Ctrl+y` | Copy rendered prompt to clipboard (overrides vim-style y) |
 | `Ctrl+l` | Increase left column width (Normal mode) |
