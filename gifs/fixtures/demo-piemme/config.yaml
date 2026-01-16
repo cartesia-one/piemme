@@ -1,0 +1,8 @@
+safe_mode: true
+tag_colors:
+  coding: "blue"
+  writing: "green"
+  work: "yellow"
+  personal: "magenta"
+  ai: "cyan"
+default_export_format: "rendered"
