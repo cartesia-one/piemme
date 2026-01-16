@@ -28,6 +28,19 @@ pub enum EditorMode {
     VimVisual,
     /// Vim Visual Line mode - line-wise selection
     VimVisualLine,
+    /// Vim Operator-pending mode - waiting for motion after d, c, y
+    VimOperatorPending(VimOperator),
+}
+
+/// Vim operators that wait for a motion
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VimOperator {
+    /// Delete operator (d)
+    Delete,
+    /// Change operator (c)
+    Change,
+    /// Yank operator (y)
+    Yank,
 }
 
 impl EditorMode {
@@ -38,6 +51,11 @@ impl EditorMode {
             EditorMode::VimInsert => "INSERT",
             EditorMode::VimVisual => "VISUAL",
             EditorMode::VimVisualLine => "V-LINE",
+            EditorMode::VimOperatorPending(op) => match op {
+                VimOperator::Delete => "d...",
+                VimOperator::Change => "c...",
+                VimOperator::Yank => "y...",
+            },
         }
     }
 
@@ -49,6 +67,19 @@ impl EditorMode {
     /// Check if the mode is a visual selection mode
     pub fn is_visual(&self) -> bool {
         matches!(self, EditorMode::VimVisual | EditorMode::VimVisualLine)
+    }
+
+    /// Check if the mode is operator-pending
+    pub fn is_operator_pending(&self) -> bool {
+        matches!(self, EditorMode::VimOperatorPending(_))
+    }
+
+    /// Get the pending operator if any
+    pub fn pending_operator(&self) -> Option<VimOperator> {
+        match self {
+            EditorMode::VimOperatorPending(op) => Some(*op),
+            _ => None,
+        }
     }
 }
 

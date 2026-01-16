@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::models::{AppState, EditorMode, NotificationLevel};
+use crate::models::{AppState, EditorMode, NotificationLevel, VimOperator};
 
 /// Render the status bar
 pub fn render_status_bar(frame: &mut Frame, area: Rect, state: &AppState, archived_count: usize) {
@@ -22,6 +22,14 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, state: &AppState, archiv
             EditorMode::VimInsert => ("INSERT", Color::Green),
             EditorMode::VimVisual => ("VISUAL", Color::Magenta),
             EditorMode::VimVisualLine => ("V-LINE", Color::Magenta),
+            EditorMode::VimOperatorPending(op) => {
+                use crate::models::VimOperator;
+                match op {
+                    VimOperator::Delete => ("d...", Color::Red),
+                    VimOperator::Change => ("c...", Color::Yellow),
+                    VimOperator::Yank => ("y...", Color::Cyan),
+                }
+            }
         };
         
         spans.push(Span::styled(

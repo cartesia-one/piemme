@@ -7,9 +7,111 @@ use tui_textarea::{CursorMove, TextArea};
 
 use crate::config::{archive_dir, config_path, folders_dir, index_path, prompts_dir, Config};
 use crate::fs::{ensure_directories, load_all_prompts, save_prompt, delete_prompt, Index, IndexEntry};
-use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState};
+use crate::models::{Action, AppState, ConfirmDialog, EditorMode, FolderSelectorMode, FolderSelectorState, Mode, NotificationLevel, PendingAction, Prompt, TagSelectorState, VimOperator};
 use crate::tui::{init_terminal, restore_terminal, Tui};
 use crate::ui::{handle_key_event, render};
+
+/// Execute a vim motion on the editor (free function to avoid borrow issues)
+fn execute_vim_motion(editor: &mut TextArea, action: &Action) {
+    match action {
+        Action::VimWordForward => editor.move_cursor(CursorMove::WordForward),
+        Action::VimWordBackward => editor.move_cursor(CursorMove::WordBack),
+        Action::VimWordEnd => {
+            editor.move_cursor(CursorMove::WordForward);
+            editor.move_cursor(CursorMove::Back);
+        }
+        Action::VimLineStart => editor.move_cursor(CursorMove::Head),
+        Action::VimFirstNonBlank => {
+            editor.move_cursor(CursorMove::Head);
+            let (row, _) = editor.cursor();
+            if let Some(line) = editor.lines().get(row) {
+                let first_non_blank = line.chars().take_while(|c| c.is_whitespace()).count();
+                editor.move_cursor(CursorMove::Jump(row as u16, first_non_blank as u16));
+            }
+        }
+        Action::VimLineEnd => editor.move_cursor(CursorMove::End),
+        Action::VimLeft => editor.move_cursor(CursorMove::Back),
+        Action::VimRight => editor.move_cursor(CursorMove::Forward),
+        Action::VimUp => editor.move_cursor(CursorMove::Up),
+        Action::VimDown => editor.move_cursor(CursorMove::Down),
+        Action::VimGoToTop => {
+            editor.move_cursor(CursorMove::Top);
+            editor.move_cursor(CursorMove::Head);
+        }
+        Action::VimGoToBottom => {
+            editor.move_cursor(CursorMove::Bottom);
+            editor.move_cursor(CursorMove::Head);
+        }
+        Action::VimParagraphBackward => {
+            move_to_paragraph_boundary(editor, false);
+        }
+        Action::VimParagraphForward => {
+            move_to_paragraph_boundary(editor, true);
+        }
+        _ => {}
+    }
+}
+
+/// Move cursor to paragraph boundary (free function)
+fn move_to_paragraph_boundary(editor: &mut TextArea, forward: bool) {
+    let lines = editor.lines();
+    let (current_row, _) = editor.cursor();
+    let total_lines = lines.len();
+
+    if forward {
+        // Move forward to next paragraph boundary (empty line after non-empty lines)
+        let mut row = current_row + 1;
+        let mut found_non_empty = false;
+        
+        while row < total_lines {
+            let line = &lines[row];
+            let is_empty = line.trim().is_empty();
+            
+            if !is_empty {
+                found_non_empty = true;
+            } else if found_non_empty {
+                // Found empty line after non-empty content
+                editor.move_cursor(CursorMove::Jump(row as u16, 0));
+                return;
+            }
+            row += 1;
+        }
+        
+        // No paragraph boundary found, go to end
+        editor.move_cursor(CursorMove::Bottom);
+        editor.move_cursor(CursorMove::Head);
+    } else {
+        // Move backward to previous paragraph boundary
+        if current_row == 0 {
+            return;
+        }
+        
+        let mut row = current_row.saturating_sub(1);
+        let mut found_non_empty = false;
+        
+        loop {
+            let line = &lines[row];
+            let is_empty = line.trim().is_empty();
+            
+            if !is_empty {
+                found_non_empty = true;
+            } else if found_non_empty {
+                // Found empty line before non-empty content
+                editor.move_cursor(CursorMove::Jump(row as u16, 0));
+                return;
+            }
+            
+            if row == 0 {
+                break;
+            }
+            row -= 1;
+        }
+        
+        // No paragraph boundary found, go to start
+        editor.move_cursor(CursorMove::Top);
+        editor.move_cursor(CursorMove::Head);
+    }
+}
 
 /// The main application
 pub struct App<'a> {
@@ -542,6 +644,8 @@ impl<'a> App<'a> {
             | Action::VimWordEnd
             | Action::VimGoToTop
             | Action::VimGoToBottom
+            | Action::VimParagraphBackward
+            | Action::VimParagraphForward
             | Action::VimDeleteChar
             | Action::VimDeleteToEnd
             | Action::VimDeleteLine
@@ -550,6 +654,9 @@ impl<'a> App<'a> {
             | Action::VimYank
             | Action::VimPut
             | Action::VimPutBefore
+            | Action::VimStartDelete
+            | Action::VimStartChange
+            | Action::VimStartYank
             | Action::ExtendSelection => {
                 // These are handled in handle_vim_editor_action when in Insert mode
             }
@@ -645,10 +752,76 @@ impl<'a> App<'a> {
             None => return Ok(()),
         };
 
-        // Collect yanked text for clipboard operations that need it
-        let mut clipboard_text: Option<String> = None;
+        // Check if we're in operator-pending mode and handle motions
+        if let EditorMode::VimOperatorPending(operator) = self.state.editor_mode {
+            // Motion actions complete the operator
+            let is_motion = matches!(
+                action,
+                Action::VimWordForward
+                | Action::VimWordBackward
+                | Action::VimWordEnd
+                | Action::VimLineStart
+                | Action::VimFirstNonBlank
+                | Action::VimLineEnd
+                | Action::VimLeft
+                | Action::VimRight
+                | Action::VimUp
+                | Action::VimDown
+                | Action::VimGoToTop
+                | Action::VimGoToBottom
+                | Action::VimParagraphBackward
+                | Action::VimParagraphForward
+            );
+
+            if is_motion {
+                // Start selection, perform motion, then execute operator
+                editor.start_selection();
+                execute_vim_motion(editor, &action);
+                
+                match operator {
+                    VimOperator::Delete => {
+                        editor.copy();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked;
+                        editor.cut();
+                    }
+                    VimOperator::Change => {
+                        editor.copy();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked;
+                        editor.cut();
+                        self.state.editor_mode = EditorMode::VimInsert;
+                        return Ok(());
+                    }
+                    VimOperator::Yank => {
+                        editor.copy();
+                        let yanked = editor.yank_text();
+                        self.state.yank_buffer = yanked;
+                        editor.cancel_selection();
+                    }
+                }
+                
+                self.state.editor_mode = EditorMode::VimNormal;
+                self.state.visual_anchor = None;
+                return Ok(());
+            }
+            
+            // Line operations (dd, cc, yy) - already handled in keybindings
+            // Just fall through to handle them below
+        }
 
         match action {
+            // Enter operator-pending mode
+            Action::VimStartDelete => {
+                self.state.editor_mode = EditorMode::VimOperatorPending(VimOperator::Delete);
+            }
+            Action::VimStartChange => {
+                self.state.editor_mode = EditorMode::VimOperatorPending(VimOperator::Change);
+            }
+            Action::VimStartYank => {
+                self.state.editor_mode = EditorMode::VimOperatorPending(VimOperator::Yank);
+            }
+            
             // Enter Vim Insert mode
             Action::VimEnterInsert => {
                 self.state.editor_mode = EditorMode::VimInsert;
@@ -683,7 +856,7 @@ impl<'a> App<'a> {
                 editor.cancel_selection();
             }
             
-            // Exit to Vim Normal mode (from Insert or Visual)
+            // Exit to Vim Normal mode (from Insert, Visual, or Operator-pending)
             Action::VimExitToNormal => {
                 self.state.editor_mode = EditorMode::VimNormal;
                 self.state.visual_anchor = None;
@@ -749,12 +922,21 @@ impl<'a> App<'a> {
                 editor.move_cursor(CursorMove::Bottom);
                 editor.move_cursor(CursorMove::Head);
             }
+            // Paragraph movements
+            Action::VimParagraphBackward => {
+                move_to_paragraph_boundary(editor, false);
+            }
+            Action::VimParagraphForward => {
+                move_to_paragraph_boundary(editor, true);
+            }
             
-            // Editing actions with clipboard
+            // Editing actions - use internal yank buffer
             Action::VimDeleteChar => {
                 if self.state.editor_mode.is_visual() {
+                    editor.copy();
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
                     editor.cut();
-                    clipboard_text = Some(editor.yank_text());
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
                 } else {
@@ -764,78 +946,109 @@ impl<'a> App<'a> {
             Action::VimDeleteToEnd => {
                 editor.start_selection();
                 editor.move_cursor(CursorMove::End);
+                editor.copy();
+                let yanked = editor.yank_text();
+                self.state.yank_buffer = yanked;
                 editor.cut();
-                clipboard_text = Some(editor.yank_text());
             }
             Action::VimDeleteLine => {
-                if self.state.editor_mode.is_visual() {
+                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
+                    editor.copy();
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
                     editor.cut();
-                    clipboard_text = Some(editor.yank_text());
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
                 } else {
+                    // Delete entire line (dd)
                     editor.move_cursor(CursorMove::Head);
                     editor.start_selection();
                     editor.move_cursor(CursorMove::Down);
+                    editor.copy();
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
                     editor.cut();
-                    clipboard_text = Some(editor.yank_text());
                 }
             }
             Action::VimChangeToEnd => {
                 editor.start_selection();
                 editor.move_cursor(CursorMove::End);
+                editor.copy();
+                let yanked = editor.yank_text();
+                self.state.yank_buffer = yanked;
                 editor.cut();
-                clipboard_text = Some(editor.yank_text());
                 self.state.editor_mode = EditorMode::VimInsert;
                 self.state.visual_anchor = None;
             }
             Action::VimChangeLine => {
-                if self.state.editor_mode.is_visual() {
+                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
+                    editor.copy();
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
                     editor.cut();
-                    clipboard_text = Some(editor.yank_text());
                     self.state.editor_mode = EditorMode::VimInsert;
                     self.state.visual_anchor = None;
                 } else {
+                    // Change entire line (cc) - but keep indentation
                     editor.move_cursor(CursorMove::Head);
                     editor.start_selection();
                     editor.move_cursor(CursorMove::End);
+                    editor.copy();
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
                     editor.cut();
-                    clipboard_text = Some(editor.yank_text());
                     self.state.editor_mode = EditorMode::VimInsert;
                 }
             }
             
-            // Clipboard actions
+            // Yank actions - use internal yank buffer
             Action::VimYank => {
-                if self.state.editor_mode.is_visual() {
+                if self.state.editor_mode.is_visual() || self.state.editor_mode.is_operator_pending() {
                     editor.copy();
-                    clipboard_text = Some(editor.yank_text());
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked;
+                    editor.cancel_selection();
                     self.state.editor_mode = EditorMode::VimNormal;
                     self.state.visual_anchor = None;
-                    editor.cancel_selection();
                 } else {
+                    // Yank entire line (yy)
                     let (row, col) = editor.cursor();
                     editor.move_cursor(CursorMove::Head);
                     editor.start_selection();
                     editor.move_cursor(CursorMove::End);
                     editor.copy();
-                    clipboard_text = Some(editor.yank_text());
+                    let yanked = editor.yank_text();
+                    self.state.yank_buffer = yanked + "\n";
                     editor.cancel_selection();
                     editor.move_cursor(CursorMove::Jump(row as u16, col as u16));
                 }
             }
+            
+            // Put actions - use internal yank buffer
             Action::VimPut => {
-                if let Ok(mut cb) = arboard::Clipboard::new() {
-                    if let Ok(text) = cb.get_text() {
-                        editor.insert_str(&text);
+                if !self.state.yank_buffer.is_empty() {
+                    // Check if yanked text ends with newline (line-wise paste)
+                    if self.state.yank_buffer.ends_with('\n') {
+                        editor.move_cursor(CursorMove::End);
+                        editor.insert_newline();
+                        let text = self.state.yank_buffer.trim_end_matches('\n');
+                        editor.insert_str(text);
+                    } else {
+                        editor.move_cursor(CursorMove::Forward);
+                        editor.insert_str(&self.state.yank_buffer);
                     }
                 }
             }
             Action::VimPutBefore => {
-                editor.move_cursor(CursorMove::Back);
-                if let Ok(mut cb) = arboard::Clipboard::new() {
-                    if let Ok(text) = cb.get_text() {
-                        editor.insert_str(&text);
+                if !self.state.yank_buffer.is_empty() {
+                    if self.state.yank_buffer.ends_with('\n') {
+                        editor.move_cursor(CursorMove::Head);
+                        let text = self.state.yank_buffer.trim_end_matches('\n');
+                        editor.insert_str(text);
+                        editor.insert_newline();
+                        editor.move_cursor(CursorMove::Up);
+                    } else {
+                        editor.insert_str(&self.state.yank_buffer);
                     }
                 }
             }
@@ -853,10 +1066,14 @@ impl<'a> App<'a> {
                 self.state.visual_anchor = Some((0, 0));
             }
             Action::CopySelection => {
+                // Use system clipboard for Ctrl+C
                 editor.copy();
-                clipboard_text = Some(editor.yank_text());
+                if let Ok(mut cb) = arboard::Clipboard::new() {
+                    let _ = cb.set_text(&editor.yank_text());
+                }
             }
             Action::Paste => {
+                // Use system clipboard for Ctrl+V
                 if let Ok(mut cb) = arboard::Clipboard::new() {
                     if let Ok(text) = cb.get_text() {
                         editor.insert_str(&text);
@@ -881,15 +1098,6 @@ impl<'a> App<'a> {
             }
             
             _ => {}
-        }
-
-        // Copy to system clipboard if we have text to copy
-        if let Some(text) = clipboard_text {
-            if !text.is_empty() {
-                if let Ok(mut cb) = arboard::Clipboard::new() {
-                    let _ = cb.set_text(&text);
-                }
-            }
         }
         
         Ok(())
@@ -1539,8 +1747,9 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    /// Open the reference popup (for CTRL+i in insert mode)
+    /// Open the reference popup (for r in vim normal mode or Ctrl+r in insert mode)
     fn open_reference_popup(&mut self) {
+        // Only allow reference popup in Insert mode (editor is active)
         if self.state.mode != Mode::Insert {
             return;
         }

@@ -289,20 +289,40 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `gg` | Move to file start |
 | `G` | Move to file end |
 | `x` / `Delete` | Delete character under cursor |
-| `d` | Delete entire line |
+| `d` | Start delete operator (waits for motion: `dw`, `d$`, `d{`, etc.) |
+| `dd` | Delete entire line |
 | `D` | Delete to end of line |
-| `c` | Change entire line |
+| `c` | Start change operator (waits for motion: `cw`, `c$`, `c{`, etc.) |
+| `cc` | Change entire line |
 | `C` | Change to end of line |
 | `u` | Undo |
 | `Ctrl+r` | Redo |
-| `y` | Yank (copy) current line |
-| `p` | Put (paste) after cursor |
-| `P` | Put (paste) before cursor |
+| `y` | Start yank operator (waits for motion: `yw`, `y$`, `y{`, etc.) |
+| `yy` | Yank (copy) current line to internal buffer |
+| `p` | Put (paste) from internal buffer after cursor |
+| `P` | Put (paste) from internal buffer before cursor |
+| `{` | Move to previous paragraph (empty line) |
+| `}` | Move to next paragraph (empty line) |
 | `v` | Enter Visual mode (character-wise) |
 | `V` | Enter Visual Line mode |
 | `Shift+Arrow` | Extend selection (hybrid) |
 | `r` | Open reference insertion popup |
+| `Ctrl+r` | Open reference insertion popup (alternative) |
 | `?` | Open help |
+
+**Note on Vim Operators:**
+The `d`, `c`, and `y` keys enter "operator-pending" mode, waiting for a motion:
+- `dw` - delete word
+- `cw` - change word (delete and enter insert mode)
+- `yw` - yank word
+- `d$` - delete to end of line
+- `d{` - delete to previous paragraph
+- `y}` - yank to next paragraph
+- And many more combinations...
+
+**Note on Yank/Paste:**
+Vim-style `y`/`p`/`P` operations use an internal buffer (not the system clipboard).
+Use `Ctrl+c`/`Ctrl+v` in Insert mode to interact with the system clipboard.
 
 #### Editor - Vim Insert Mode
 
@@ -313,8 +333,8 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `Ctrl+z` | Undo |
 | `Ctrl+y` | Redo |
 | `Ctrl+a` | Select all text |
-| `Ctrl+c` | Copy selected text |
-| `Ctrl+v` | Paste from clipboard |
+| `Ctrl+c` | Copy selected text to system clipboard |
+| `Ctrl+v` | Paste from system clipboard |
 | `Ctrl+r` | Open reference insertion popup |
 | `Shift+Arrow` | Extend text selection (hybrid) |
 | (typing) | Insert text normally |
@@ -326,9 +346,10 @@ The editor uses a **hybrid Vim/normal editing model**. When you press Enter on a
 | `Esc` | Exit to Vim Normal mode |
 | `h/j/k/l` or arrows | Extend selection |
 | `w/b/e/0/$` | Extend selection by word/line |
-| `d` / `x` | Delete selection |
+| `{/}` | Extend selection by paragraph |
+| `d` / `x` | Delete selection (saves to internal buffer) |
 | `c` | Change selection (delete and enter Insert) |
-| `y` | Yank (copy) selection |
+| `y` | Yank (copy) selection to internal buffer |
 | `v` | Toggle Visual mode off |
 | `V` | Switch to Visual Line mode |
 | `Ctrl+a` | Select all |

@@ -134,6 +134,7 @@ fn render_editor(
                 crate::models::EditorMode::VimVisual | crate::models::EditorMode::VimVisualLine => {
                     Style::default().fg(Color::Magenta)
                 }
+                crate::models::EditorMode::VimOperatorPending(_) => Style::default().fg(Color::Yellow),
             };
             
             styled_textarea.set_block(
@@ -156,6 +157,10 @@ fn render_editor(
                 crate::models::EditorMode::VimVisual | crate::models::EditorMode::VimVisualLine => {
                     // Highlight cursor for visual mode
                     Style::default().bg(Color::Magenta).fg(Color::White)
+                }
+                crate::models::EditorMode::VimOperatorPending(_) => {
+                    // Block cursor for operator-pending mode (like normal)
+                    Style::default().bg(Color::Yellow).fg(Color::Black)
                 }
             };
             styled_textarea.set_cursor_style(cursor_style);

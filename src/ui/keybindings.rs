@@ -141,6 +141,7 @@ fn handle_insert_mode(key: KeyEvent, state: &AppState) -> Action {
         EditorMode::VimNormal => handle_vim_normal_mode(key),
         EditorMode::VimInsert => handle_vim_insert_mode(key),
         EditorMode::VimVisual | EditorMode::VimVisualLine => handle_vim_visual_mode(key, state),
+        EditorMode::VimOperatorPending(_) => handle_vim_operator_pending_mode(key, state),
     }
 }
 
@@ -184,16 +185,19 @@ fn handle_vim_normal_mode(key: KeyEvent) -> Action {
         KeyCode::Char('e') => Action::VimWordEnd,
         KeyCode::Char('g') => Action::VimGoToTop,
         KeyCode::Char('G') => Action::VimGoToBottom,
+        // Paragraph movements
+        KeyCode::Char('{') => Action::VimParagraphBackward,
+        KeyCode::Char('}') => Action::VimParagraphForward,
         
-        // Editing
+        // Editing - start operator-pending mode for d, c, y
         KeyCode::Char('x') | KeyCode::Delete => Action::VimDeleteChar,
         KeyCode::Char('D') => Action::VimDeleteToEnd,
         KeyCode::Char('C') => Action::VimChangeToEnd,
-        KeyCode::Char('d') => Action::VimDeleteLine, // Simplified: 'd' alone deletes line (dd)
-        KeyCode::Char('c') => Action::VimChangeLine, // Simplified: 'c' alone changes line (cc)
+        KeyCode::Char('d') => Action::VimStartDelete,  // Enter operator-pending mode
+        KeyCode::Char('c') => Action::VimStartChange,  // Enter operator-pending mode
         
-        // Clipboard (vim style)
-        KeyCode::Char('y') => Action::VimYank,
+        // Yank (vim style) - enter operator-pending mode
+        KeyCode::Char('y') => Action::VimStartYank,
         KeyCode::Char('p') => Action::VimPut,
         KeyCode::Char('P') => Action::VimPutBefore,
         
@@ -201,7 +205,7 @@ fn handle_vim_normal_mode(key: KeyEvent) -> Action {
         KeyCode::Char('u') => Action::Undo,
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Redo,
         
-        // Open reference popup
+        // Open reference popup (Ctrl+r also works for references in normal mode)
         KeyCode::Char('r') if !key.modifiers.contains(KeyModifiers::CONTROL) => Action::OpenReferencePopup,
         
         // Help
@@ -271,6 +275,9 @@ fn handle_vim_visual_mode(key: KeyEvent, state: &AppState) -> Action {
         KeyCode::Char('e') => Action::VimWordEnd,
         KeyCode::Char('g') => Action::VimGoToTop,
         KeyCode::Char('G') => Action::VimGoToBottom,
+        // Paragraph movements
+        KeyCode::Char('{') => Action::VimParagraphBackward,
+        KeyCode::Char('}') => Action::VimParagraphForward,
         
         // Actions on selection
         KeyCode::Char('d') | KeyCode::Char('x') => Action::VimDeleteChar, // Delete selection
@@ -294,6 +301,45 @@ fn handle_vim_visual_mode(key: KeyEvent, state: &AppState) -> Action {
         }
         
         _ => Action::None,
+    }
+}
+
+/// Handle keys in Vim Operator-pending mode (after d, c, y)
+fn handle_vim_operator_pending_mode(key: KeyEvent, state: &AppState) -> Action {
+    use crate::models::VimOperator;
+    
+    let operator = match state.editor_mode.pending_operator() {
+        Some(op) => op,
+        None => return Action::VimExitToNormal,
+    };
+    
+    match key.code {
+        // Cancel operator
+        KeyCode::Esc => Action::VimExitToNormal,
+        
+        // Double key for line operation (dd, cc, yy)
+        KeyCode::Char('d') if operator == VimOperator::Delete => Action::VimDeleteLine,
+        KeyCode::Char('c') if operator == VimOperator::Change => Action::VimChangeLine,
+        KeyCode::Char('y') if operator == VimOperator::Yank => Action::VimYank,
+        
+        // Motion keys - these will be combined with the operator in app.rs
+        KeyCode::Char('w') => Action::VimWordForward,
+        KeyCode::Char('b') => Action::VimWordBackward,
+        KeyCode::Char('e') => Action::VimWordEnd,
+        KeyCode::Char('0') | KeyCode::Home => Action::VimLineStart,
+        KeyCode::Char('^') => Action::VimFirstNonBlank,
+        KeyCode::Char('$') | KeyCode::End => Action::VimLineEnd,
+        KeyCode::Char('h') | KeyCode::Left => Action::VimLeft,
+        KeyCode::Char('j') | KeyCode::Down => Action::VimDown,
+        KeyCode::Char('k') | KeyCode::Up => Action::VimUp,
+        KeyCode::Char('l') | KeyCode::Right => Action::VimRight,
+        KeyCode::Char('g') => Action::VimGoToTop,
+        KeyCode::Char('G') => Action::VimGoToBottom,
+        KeyCode::Char('{') => Action::VimParagraphBackward,
+        KeyCode::Char('}') => Action::VimParagraphForward,
+        
+        // Invalid key - cancel operator
+        _ => Action::VimExitToNormal,
     }
 }
 

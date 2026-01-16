@@ -180,11 +180,31 @@
 - [x] Implement `u` undo
 - [x] Implement `Ctrl+r` redo
 
+### 6.4.1 Operator-Pending Mode
+- [x] Implement VimOperatorPending mode for d/c/y + motion combinations
+- [x] Support `dw`/`db`/`de` delete word motions
+- [x] Support `cw`/`cb`/`ce` change word motions
+- [x] Support `yw`/`yb`/`ye` yank word motions
+- [x] Support `d0`/`d$` delete to line boundaries
+- [x] Support `c0`/`c$` change to line boundaries
+- [x] Support `y0`/`y$` yank to line boundaries
+- [x] Support `dd`/`cc`/`yy` for full line operations
+- [x] Support `{`/`}` paragraph movements in operator-pending mode
+- [x] Show operator-pending status in status bar (e.g., "d...", "c...", "y...")
+- [x] Escape cancels operator-pending mode
+
 ### 6.5 Vim Clipboard Operations
 - [x] Implement `y` yank (copy) line/selection
 - [x] Implement `p` put (paste) after cursor
 - [x] Implement `P` put (paste) before cursor
 - [x] Integrate with system clipboard
+- [x] Implement internal yank buffer for vim y/p operations (avoids clipboard errors)
+- [x] System clipboard used only for Ctrl+C/Ctrl+V
+
+### 6.5.1 Paragraph Navigation
+- [x] Implement `{` move to previous paragraph boundary
+- [x] Implement `}` move to next paragraph boundary
+- [x] Support paragraph movements in Visual mode
 
 ### 6.6 Hybrid Editor Features
 - [x] Support `Shift+Arrow` for selection in all editor modes

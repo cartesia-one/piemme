@@ -196,6 +196,10 @@ pub enum Action {
     VimGoToTop,
     /// Vim move to end of file (G)
     VimGoToBottom,
+    /// Vim move to previous paragraph ({)
+    VimParagraphBackward,
+    /// Vim move to next paragraph (})
+    VimParagraphForward,
     /// Vim delete character under cursor (x)
     VimDeleteChar,
     /// Vim delete to end of line (D)
@@ -212,6 +216,12 @@ pub enum Action {
     VimPut,
     /// Vim put (paste) before cursor (P)
     VimPutBefore,
+    /// Enter operator-pending mode for delete (d)
+    VimStartDelete,
+    /// Enter operator-pending mode for change (c)
+    VimStartChange,
+    /// Enter operator-pending mode for yank (y)
+    VimStartYank,
     /// Extend selection with Shift+Arrow (hybrid mode)
     ExtendSelection,
 

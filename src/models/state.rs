@@ -55,6 +55,8 @@ pub struct AppState {
     pub editor_mode: EditorMode,
     /// Visual mode anchor position (row, col) for selection start
     pub visual_anchor: Option<(usize, usize)>,
+    /// Internal yank buffer for vim-style copy/paste (not system clipboard)
+    pub yank_buffer: String,
 }
 
 impl AppState {
@@ -86,6 +88,7 @@ impl AppState {
             folder_selector: None,
             editor_mode: EditorMode::VimNormal,
             visual_anchor: None,
+            yank_buffer: String::new(),
         }
     }
 
