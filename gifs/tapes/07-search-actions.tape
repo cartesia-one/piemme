@@ -110,17 +110,6 @@ Sleep 1200ms
 # Prompt deleted
 Sleep 1500ms
 
-# Search by content
-Type "/"
-Sleep 600ms
-Type "Big O"
-Sleep 1000ms
-Enter
-Sleep 1200ms
-
-# Found prompt containing that text
-Sleep 1500ms
-
 # Quit
 Type "q"
 Sleep 500ms
